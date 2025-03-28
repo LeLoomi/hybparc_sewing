@@ -1,0 +1,9 @@
+__pycache__/
+tmp/
+ArucoRoi/
+results/
+lib/
+.vscode/
+
+.DS_Store
+ui-tester.py
