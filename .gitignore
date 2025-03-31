@@ -6,4 +6,4 @@ lib/
 .vscode/
 
 .DS_Store
-ui-tester.py
+*.avi
