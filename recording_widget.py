@@ -1,10 +1,10 @@
 from PyQt6.QtWidgets import QWidget, QDialogButtonBox, QHBoxLayout, QLabel, QVBoxLayout
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtGui import QKeySequence
 from PyQt6.QtCore import Qt, pyqtSignal
 
 class RecordingWidget(QWidget):
-    start_recording = pyqtSignal()
-    stop_recording = pyqtSignal()
+    start_recording_signal = pyqtSignal()
+    stop_recording_signal = pyqtSignal()
     
     def __init__(self):
         super().__init__()
@@ -22,13 +22,15 @@ class RecordingWidget(QWidget):
         iconTextLayout.addStretch()
 
         buttonBox = QDialogButtonBox()
-        startButton = buttonBox.addButton('Start recording', QDialogButtonBox.ButtonRole.AcceptRole)
-        startButton.setFont(font)
-        startButton.setShortcut(Qt.Key.Key_Return)
-        stopButton = buttonBox.addButton('Stop recording', QDialogButtonBox.ButtonRole.HelpRole)
-        stopButton.setFont(font)
-        buttonBox.accepted.connect(self.emit_start)
-        buttonBox.helpRequested.connect(self.emit_stop)
+        self.startButton = buttonBox.addButton('Start recording', QDialogButtonBox.ButtonRole.YesRole)
+        self.startButton.clicked.connect(self.start_recording)
+        self.startButton.setFont(font)
+        self.startButton.setShortcut(Qt.Key.Key_Return)
+        
+        self.stopButton = buttonBox.addButton('Stop recording', QDialogButtonBox.ButtonRole.NoRole)
+        self.stopButton.clicked.connect(self.stop_recording)
+        self.stopButton.setFont(font)
+        self.stopButton.setDisabled(True)
 
         contentLayout = QVBoxLayout()
         contentLayout.addStretch()
@@ -43,8 +45,16 @@ class RecordingWidget(QWidget):
 
         self.setLayout(mainLayout)
     
-    def emit_start(self):
-        self.start_recording.emit()
+    def start_recording(self):
+        self.startButton.setDisabled(True)
+        self.stopButton.setEnabled(True)
+        self.startButton.setShortcut(QKeySequence())
+        self.stopButton.setShortcut(Qt.Key.Key_Return)
+        self.start_recording_signal.emit()
 
-    def emit_stop(self):
-        self.stop_recording.emit()
+    def stop_recording(self):
+        self.startButton.setEnabled(True)
+        self.stopButton.setDisabled(True)
+        self.startButton.setShortcut(Qt.Key.Key_Return)
+        self.stopButton.setShortcut(QKeySequence())
+        self.stop_recording_signal.emit()

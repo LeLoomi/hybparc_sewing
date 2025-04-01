@@ -28,7 +28,7 @@ class MainWindow(QMainWindow):
         self.stream.set(cv.CAP_PROP_FPS, self.real_fps)
         
         # Window setup
-        #self.showMaximized()
+        self.showMaximized()
         self.setWindowTitle('Hybparc Sewing Training')
         self.show_welcome_widget()
 
@@ -42,8 +42,8 @@ class MainWindow(QMainWindow):
     def show_recording_screen(self):
         print('[Hybparc] Displaying recording widget')
         recording_widget = RecordingWidget()
-        recording_widget.start_recording.connect(self.start_recording)
-        recording_widget.stop_recording.connect(self.stop_recording)
+        recording_widget.start_recording_signal.connect(self.start_recording)
+        recording_widget.stop_recording_signal.connect(self.stop_recording)
         self.setCentralWidget(recording_widget)
     
     def start_recording(self):
@@ -58,13 +58,18 @@ class MainWindow(QMainWindow):
     
     def record(self):
         self.out = cv.VideoWriter('recording.avi', self.fourcc, self.target_fps, self.resolution)
-        
         iter = int(self.real_fps / self.target_fps - 1)
         frame_counter = iter
+        current_frame = None
 
         while self.recording:
+            ret, frame = self.stream.read()
+            
+            # skip iter if we are not at the next frame again
+            if current_frame == frame.all:
+                continue
+            
             if frame_counter == iter:
-                ret, frame = self.stream.read()
                 self.out.write(frame)
                 frame_counter = int((frame_counter + 1) % (int(self.real_fps / self.target_fps)))
             
