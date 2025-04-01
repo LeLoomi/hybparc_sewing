@@ -1,8 +1,6 @@
 virTUos Hybparc Medical Sewing Training (UI)
 ==============
 
-> ☝️ A much more extensive Readme is [available as PDF](/readme-tex/readme.pdf) in German
-
 UI for a hands on medical sewing training software for med students. Students sew on a pad and get a grade (green, orange, red) according to achieved quality.
 This UI is being developed at [MITZ](https://tu-dresden.de/med/mf/mitz), with evaluation Software being imported from [RWTH Aachen](https://www.rwth-aachen.de/go/id/a/).
 
