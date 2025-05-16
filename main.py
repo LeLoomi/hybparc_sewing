@@ -5,12 +5,13 @@ from welcome_widget import WelcomeWidget
 from recording_widget import RecordingWidget
 
 class MainWindow(QMainWindow):
-    resolution = (1280, 720)
-    real_fps = 30.0
+    # ! Parameters are specific to our GoPro Hero 9 Black
+    resolution = (1920, 1080)
+    real_fps = 60.0
     target_fps = 5
-    cam_index = 1
+    cam_index = 2
     cam_api = cv.CAP_ANY
-    fourcc = cv.VideoWriter.fourcc('M', 'J', 'P', 'G') # realsense = YUY2
+    fourcc = cv.VideoWriter.fourcc(*'MJPG')
     
     recording = False
     
@@ -19,8 +20,7 @@ class MainWindow(QMainWindow):
         print('[Hybparc] Booting up')
         super().__init__()
         
-        # Setup and warm up cameras
-        # ! Adjustments are specific to our Intel Realsense d435i
+        # Setup and warm up camera
         self.stream = cv.VideoCapture(index=self.cam_index, apiPreference=self.cam_api)
         self.stream.set(cv.CAP_PROP_FOURCC, self.fourcc)
         self.stream.set(cv.CAP_PROP_FRAME_WIDTH, self.resolution[0])
@@ -60,14 +60,9 @@ class MainWindow(QMainWindow):
         self.out = cv.VideoWriter('recording.avi', self.fourcc, self.target_fps, self.resolution)
         iter = int(self.real_fps / self.target_fps - 1)
         frame_counter = iter
-        current_frame = None
 
         while self.recording:
             ret, frame = self.stream.read()
-            
-            # skip iter if we are not at the next frame again
-            if current_frame == frame.all:
-                continue
             
             if frame_counter == iter:
                 self.out.write(frame)
