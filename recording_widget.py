@@ -1,5 +1,5 @@
-from PyQt6.QtWidgets import QWidget, QDialogButtonBox, QHBoxLayout, QLabel, QVBoxLayout
-from PyQt6.QtGui import QKeySequence
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QPushButton
+from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal
 
 class RecordingWidget(QWidget):
@@ -21,21 +21,23 @@ class RecordingWidget(QWidget):
         iconTextLayout.addWidget(textLabel)
         iconTextLayout.addStretch()
 
-        buttonBox = QDialogButtonBox()
-        self.startButton = buttonBox.addButton('Start recording', QDialogButtonBox.ButtonRole.YesRole)
-        self.startButton.clicked.connect(self.start_recording)
-        self.startButton.setFont(font)
-        self.startButton.setShortcut(Qt.Key.Key_Return)
+        self.controlButton = QPushButton('Aufzeichnung starten')
+        self.controlButton.clicked.connect(self.start_recording)
+        self.controlButton.setFont(font)
         
-        self.stopButton = buttonBox.addButton('Stop recording', QDialogButtonBox.ButtonRole.NoRole)
-        self.stopButton.clicked.connect(self.stop_recording)
-        self.stopButton.setFont(font)
-        self.stopButton.setDisabled(True)
-
+        self.iconLabel = QLabel()
+        self.iconLabel.setPixmap(QPixmap('graphics/video-slash-solid.svg').scaledToHeight(50, Qt.TransformationMode.SmoothTransformation))
+        
+        buttonLayout = QHBoxLayout()
+        buttonLayout.addStretch()
+        buttonLayout.addWidget(self.iconLabel)
+        buttonLayout.addWidget(self.controlButton)
+        buttonLayout.addStretch()
+        
         contentLayout = QVBoxLayout()
         contentLayout.addStretch()
         contentLayout.addLayout(iconTextLayout)
-        contentLayout.addWidget(buttonBox)
+        contentLayout.addLayout(buttonLayout)
         contentLayout.addStretch()
 
         mainLayout = QHBoxLayout()
@@ -46,15 +48,15 @@ class RecordingWidget(QWidget):
         self.setLayout(mainLayout)
     
     def start_recording(self):
-        self.startButton.setDisabled(True)
-        self.stopButton.setEnabled(True)
-        self.startButton.setShortcut(QKeySequence())
-        self.stopButton.setShortcut(Qt.Key.Key_Return)
+        self.controlButton.setText('Aufzeichnung stoppen')
+        self.iconLabel.setPixmap(QPixmap('graphics/video-solid.svg').scaledToHeight(50, Qt.TransformationMode.SmoothTransformation))
+        self.controlButton.clicked.disconnect(self.start_recording)
+        self.controlButton.clicked.connect(self.stop_recording)
         self.start_recording_signal.emit()
 
     def stop_recording(self):
-        self.startButton.setEnabled(True)
-        self.stopButton.setDisabled(True)
-        self.startButton.setShortcut(Qt.Key.Key_Return)
-        self.stopButton.setShortcut(QKeySequence())
+        self.controlButton.setText('Nochmal aufzeichnen')
+        self.iconLabel.setPixmap(QPixmap('graphics/video-slash-solid.svg').scaledToHeight(50, Qt.TransformationMode.SmoothTransformation))
+        self.controlButton.clicked.connect(self.start_recording)
+        self.controlButton.clicked.disconnect(self.stop_recording)
         self.stop_recording_signal.emit()

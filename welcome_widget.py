@@ -23,14 +23,14 @@ class WelcomeWidget(QWidget):
         self.m_lineEditName.setMinimumWidth(300)
         self.m_lineEditName.setFont(mediumFont)
 
-        textLabel = QLabel('Willkommen zur Naht-Selbstlerneinheit mit automatischer Auswertung.')
+        textLabel = QLabel('Willkommen zur Naht-Selbstlerneinheit!')
         textLabel.setTextFormat(Qt.TextFormat.RichText)
 
         font = textLabel.font()
         font.setPointSize(32)
         textLabel.setFont(font)
 
-        startButton = QPushButton("Starten")
+        startButton = QPushButton("Weiter")
         startButton.clicked.connect(self.emit_start_pressed)
         startButton.setShortcut(Qt.Key.Key_Return)
         startButton.setFont(mediumFont)

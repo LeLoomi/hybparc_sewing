@@ -21,7 +21,7 @@ class MainWindow(QMainWindow):
     
     # Entry into the GUI
     def __init__(self):
-        print('[Hybparc] ⏰ Booting up')
+        print('[Hybparc] ⏰ Booting up.')
         super().__init__()
         
         # Window setup
@@ -31,13 +31,13 @@ class MainWindow(QMainWindow):
 
     # Welcome screen on the 
     def show_welcome_widget(self):
-        print('[Hybparc] 📺 Displaying welcome widget')
+        print('[Hybparc] 📺 Displaying welcome widget.')
         welcome_widget = WelcomeWidget()
         welcome_widget.start_pressed.connect(self.show_recording_screen)
         self.setCentralWidget(welcome_widget)
 
     def show_recording_screen(self):
-        print('[Hybparc] 📺 Displaying recording widget')
+        print('[Hybparc] 📺 Displaying recording widget.')
         recording_widget = RecordingWidget()
         recording_widget.start_recording_signal.connect(self.start_recording)
         recording_widget.stop_recording_signal.connect(self.stop_recording)
