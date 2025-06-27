@@ -6,4 +6,5 @@ lib/
 .vscode/
 
 .DS_Store
-*.avi
+aachen_suturing
+models

@@ -48,15 +48,21 @@ class RecordingWidget(QWidget):
         self.setLayout(mainLayout)
     
     def start_recording(self):
-        self.controlButton.setText('Aufzeichnung stoppen')
-        self.iconLabel.setPixmap(QPixmap('graphics/video-solid.svg').scaledToHeight(50, Qt.TransformationMode.SmoothTransformation))
-        self.controlButton.clicked.disconnect(self.start_recording)
-        self.controlButton.clicked.connect(self.stop_recording)
         self.start_recording_signal.emit()
 
     def stop_recording(self):
+        self.stop_recording_signal.emit()
+
+    # called directly from main, to handle when we know rec has actually started
+    def handle_ui_start(self):
+        self.controlButton.setText('Aufzeichnung stoppen')
+        self.iconLabel.setPixmap(QPixmap('./graphics/video-solid.svg').scaledToHeight(50, Qt.TransformationMode.SmoothTransformation))
+        self.controlButton.clicked.disconnect(self.start_recording)
+        self.controlButton.clicked.connect(self.stop_recording)
+
+    # called directly from main, to handle when we know rec has actually stopped
+    def handle_ui_stop(self):
         self.controlButton.setText('Nochmal aufzeichnen')
-        self.iconLabel.setPixmap(QPixmap('graphics/video-slash-solid.svg').scaledToHeight(50, Qt.TransformationMode.SmoothTransformation))
+        self.iconLabel.setPixmap(QPixmap('./graphics/video-slash-solid.svg').scaledToHeight(50, Qt.TransformationMode.SmoothTransformation))
         self.controlButton.clicked.connect(self.start_recording)
         self.controlButton.clicked.disconnect(self.stop_recording)
-        self.stop_recording_signal.emit()
