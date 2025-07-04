@@ -3,9 +3,10 @@ import threading
 import requests
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication, QMainWindow
-#from aachen_suturing import predict_mitz
 from welcome_widget import WelcomeWidget
 from recording_widget import RecordingWidget
+from aachen_suturing import predict_mitz
+from PIL import Image
 
 class MainWindow(QMainWindow):
     GP_IP = '172.29.197.51'         # GP http endpoint, for IP check official gp docs
@@ -18,7 +19,7 @@ class MainWindow(QMainWindow):
     TARGET_FPS = 5                  # needs to be a fraction of REAL_FPS
     CAM_API = cv.CAP_ANY
     FOURCC = cv.VideoWriter.fourcc(*'MJPG')
-    RECORDING_LENGTH = 5#5*60         # in seconds
+    RECORDING_LENGTH = 15#5*60         # in seconds
     
     recording = False   # don't touch
     recorded_frames: list[cv.typing.MatLike] = list()
@@ -57,7 +58,7 @@ class MainWindow(QMainWindow):
         
         self.log('📡 Commanded UDP stream to start.')
         if req.status_code == 200:
-            self.log('🛰️ RC 200, stream is running.')
+            self.log(f'🛰️  RC 200, stream is running.')
         else:
             # TODO handle this and retry at least once ngl
             self.log('🚨 RC was {req.status_code} (expected = 200). \n{req.content}\n\n')
@@ -87,7 +88,7 @@ class MainWindow(QMainWindow):
         
         self.log('📡 Commanded UDP stream to stop.')
         if req.status_code == 200:
-            self.log('🛰️ RC 200, streaming has ceased.')
+            self.log(f'🛰️  RC 200, streaming has ceased.')
         else:
             # ? does this need handling? imo no tbh
             self.log(f'🚨 RC was {req.status_code} (expected: 200). \n{req.content}\n\n')
@@ -120,7 +121,6 @@ class MainWindow(QMainWindow):
             if drop_counter == iter:
                 total_frames += 1
                 self.recorded_frames.append(frame)
-                self.log(str(total_frames))
                 drop_counter = int((drop_counter + 1) % (int(self.REAL_FPS / self.TARGET_FPS)))
             
             else:
@@ -144,18 +144,15 @@ class MainWindow(QMainWindow):
             center_x = int(orig_w / 2)
             
             img = img[center_y - int(new_h / 2) : center_y + int(new_h / 2), center_x - int(new_w / 2) : center_x + int(new_w / 2)]
-            
-            cv.imwrite(f'out/10cropped.png', img)
-            
+        
             # now we have 16:9 so we can scale down to models preferred 270x480 (which is 16:9 also)
             img = cv.resize(src=img, dsize=(480, 270))
             
-            self.processed_frames.append(img)
-        cv.imwrite(f'out/0original.png', self.recorded_frames[0])
-        cv.imwrite(f'out/30final.png', self.processed_frames[0])
+            rgb = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+            self.processed_frames.append(Image.fromarray(rgb))
         
         # ! Model call happens here
-        #predict_mitz.main("test-lul", self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64)
+        predict_mitz.main("test-lul", self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64)
 
     def log(self, message: str):
         print(f'[Hybparc] {message}')

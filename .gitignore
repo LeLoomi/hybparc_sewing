@@ -5,6 +5,8 @@ results/
 lib/
 .vscode/
 
+*log.txt
+
 .DS_Store
 aachen_suturing
 models
