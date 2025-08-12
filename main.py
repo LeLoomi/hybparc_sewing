@@ -155,8 +155,10 @@ class MainWindow(QMainWindow):
         for i in range(len(self.recorded_frames)):
             img = self.recorded_frames[i]
             
-            # We sometimes get none frames for some reason.
+            # We sometimes get broken frames for some reason. Ty Gopro i guess.
             if (img is type(None)):
+                continue
+            if (img.shape is type(None)):
                 continue
             
             # GP9 480 = (848x480) which is not 16:9 by like 4px in width.....
