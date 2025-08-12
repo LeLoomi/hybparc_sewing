@@ -33,6 +33,7 @@ class RecordingWidget(QWidget):
         self.controlButton.setFont(font)
         
         self.iconSvgWidget = QSvgWidget('./graphics/video-slash-solid.svg')
+        self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
         self.iconSvgWidget.setFixedSize(50, 50)
         
         buttonLayout = QHBoxLayout()
@@ -70,6 +71,7 @@ class RecordingWidget(QWidget):
         self.controlButton.setText('Aufzeichnung stoppen')
         self.controlButton.setEnabled(True)
         self.iconSvgWidget.load('./graphics/video-solid.svg')
+        self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
         
         self.controlButton.clicked.disconnect(self.start_recording)
         self.controlButton.clicked.connect(self.stop_recording)
@@ -78,17 +80,20 @@ class RecordingWidget(QWidget):
         self.controlButton.setText('Aufnahme wird gestartet...')
         self.controlButton.setDisabled(True)
         self.iconSvgWidget.load('./graphics/circle-notch-solid-animated.svg')
+        self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
     
     def set_state_evaluating(self):
         self.controlButton.setText('Aufnahme wird ausgewertet...')
         self.controlButton.setDisabled(True)
         self.iconSvgWidget.load('./graphics/circle-notch-solid-animated.svg')
+        self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
 
     # called directly from main, to handle when we know rec has actually stopped
     def set_state_ready_to_record(self):
         self.controlButton.setText('Nochmal aufzeichnen')
         self.controlButton.setEnabled(True)
         self.iconSvgWidget.load('./graphics/video-slash-solid.svg')
+        self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
         
         self.controlButton.clicked.connect(self.start_recording)
-        #self.controlButton.clicked.disconnect(self.stop_recording)
+        self.controlButton.clicked.disconnect(self.stop_recording)
