@@ -5,6 +5,7 @@ from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from welcome_widget import WelcomeWidget
 from recording_widget import RecordingWidget
+from results_widget import ResultsWidget
 from aachen_suturing import predict_mitz
 from PIL import Image
 
@@ -27,27 +28,33 @@ class MainWindow(QMainWindow):
     
     # Entry into the GUI
     def __init__(self):
-        self.log('✌️ Booting up.')
+        self.log('✌️  Booting up.')
         super().__init__()
         
         # Window setup
         self.showMaximized()
         self.setWindowTitle('Hybparc Sewing Training')
-        self.show_welcome_widget()
+        # ! self.show_welcome_widget()
+        self.show_recording_widget()
 
     # Welcome screen on the 
     def show_welcome_widget(self):
         self.log('📺 Displaying welcome widget.')
         welcome_widget = WelcomeWidget()
-        welcome_widget.start_pressed.connect(self.show_recording_screen)
+        welcome_widget.start_pressed.connect(self.show_recording_widget)
         self.setCentralWidget(welcome_widget)
 
-    def show_recording_screen(self):
+    def show_recording_widget(self):
         self.log('📺 Displaying recording widget.')
         self.recording_widget = RecordingWidget()
         self.recording_widget.start_recording_signal.connect(self.start_recording)
         self.recording_widget.stop_recording_signal.connect(self.stop_recording)
         self.setCentralWidget(self.recording_widget)
+    
+    def show_results_widget(self):
+        self.log(f'📺 Displaying results widget.')
+        self.results_widget = ResultsWidget()
+        self.setCentralWidget(self.results_widget)
     
     def start_recording(self):
         # Set up GoPro
@@ -67,7 +74,10 @@ class MainWindow(QMainWindow):
         self.recording = True
         self.rec_thread = threading.Thread(target=self.record, args=())
         self.rec_thread.start()
-        self.recording_widget.handle_ui_start()
+        
+        # set ui loading until we actually have our capture running [Search REF001]
+        self.recording_widget.set_state_booting_capture_signal.emit()
+        
         self.log('📸 Starting to record.')
     
     def handle_timeout(self):
@@ -94,9 +104,15 @@ class MainWindow(QMainWindow):
             self.log(f'🚨 RC was {req.status_code} (expected: 200). \n{req.content}\n\n')
             raise RuntimeError(f'Camera responded with {req.status_code} to stop command!')
         
-        self.recording_widget.handle_ui_stop()
+        self.recording_widget.set_state_ready_to_record_signal.emit()
         
-        self.process_frames()
+        # ! care: method continues exec after starting thread!
+        threading.Thread(target=self.process_frames, args=()).start()
+        
+        # since this is now threaded ui still works -> we want to disable recording button for example
+        # we reanable it at the end of process_frames() :) [Search REF002]
+        self.recording_widget.set_state_evaluating_signal.emit()
+        
     
     def record(self):
         # Set up capture
@@ -106,6 +122,9 @@ class MainWindow(QMainWindow):
         self.stream.set(cv.CAP_PROP_FRAME_HEIGHT, self.CAP_RES[1])
         self.stream.set(cv.CAP_PROP_FPS, self.REAL_FPS)
         self.log('✅ Capture is running.')
+        
+        # capture is running so we can now actually set ui to say so [Search REF001]
+        self.recording_widget.set_state_recording_signal.emit()
         
         iter = int(self.REAL_FPS / self.TARGET_FPS - 1)
         drop_counter = iter
@@ -136,6 +155,10 @@ class MainWindow(QMainWindow):
         for i in range(len(self.recorded_frames)):
             img = self.recorded_frames[i]
             
+            # We sometimes get none frames for some reason.
+            if (img is type(None)):
+                continue
+            
             # GP9 480 = (848x480) which is not 16:9 by like 4px in width.....
             new_h = 476
             new_w = 848
@@ -152,7 +175,11 @@ class MainWindow(QMainWindow):
             self.processed_frames.append(Image.fromarray(rgb))
         
         # ! Model call happens here
-        predict_mitz.main("test-lul", self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64)
+        # We have modified predict_mitz() to return the result instead of printing it!
+        self.log(predict_mitz.main("test-lul", self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64))
+        
+        # we are done with eval and so actually ready to rerecord if user wants [Search REF002]
+        self.recording_widget.set_state_ready_to_record_signal.emit()
 
     def log(self, message: str):
         print(f'[Hybparc] {message}')

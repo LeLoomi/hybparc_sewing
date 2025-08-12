@@ -1,10 +1,17 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QPushButton
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtSvgWidgets import QSvgWidget
 
 class RecordingWidget(QWidget):
     start_recording_signal = pyqtSignal()
     stop_recording_signal = pyqtSignal()
+    
+    # we need signals for thread safety lol
+    set_state_ready_to_record_signal = pyqtSignal()
+    set_state_booting_capture_signal = pyqtSignal()
+    set_state_evaluating_signal = pyqtSignal()
+    set_state_recording_signal = pyqtSignal()
     
     def __init__(self):
         super().__init__()
@@ -25,12 +32,12 @@ class RecordingWidget(QWidget):
         self.controlButton.clicked.connect(self.start_recording)
         self.controlButton.setFont(font)
         
-        self.iconLabel = QLabel()
-        self.iconLabel.setPixmap(QPixmap('graphics/video-slash-solid.svg').scaledToHeight(50, Qt.TransformationMode.SmoothTransformation))
+        self.iconSvgWidget = QSvgWidget('./graphics/video-slash-solid.svg')
+        self.iconSvgWidget.setFixedSize(50, 50)
         
         buttonLayout = QHBoxLayout()
         buttonLayout.addStretch()
-        buttonLayout.addWidget(self.iconLabel)
+        buttonLayout.addWidget(self.iconSvgWidget)
         buttonLayout.addWidget(self.controlButton)
         buttonLayout.addStretch()
         
@@ -46,6 +53,11 @@ class RecordingWidget(QWidget):
         mainLayout.addStretch()
 
         self.setLayout(mainLayout)
+        
+        self.set_state_ready_to_record_signal.connect(self.set_state_ready_to_record)
+        self.set_state_booting_capture_signal.connect(self.set_state_booting_capture)
+        self.set_state_evaluating_signal.connect(self.set_state_evaluating)
+        self.set_state_recording_signal.connect(self.set_state_recording)
     
     def start_recording(self):
         self.start_recording_signal.emit()
@@ -54,15 +66,29 @@ class RecordingWidget(QWidget):
         self.stop_recording_signal.emit()
 
     # called directly from main, to handle when we know rec has actually started
-    def handle_ui_start(self):
+    def set_state_recording(self):
         self.controlButton.setText('Aufzeichnung stoppen')
-        self.iconLabel.setPixmap(QPixmap('./graphics/video-solid.svg').scaledToHeight(50, Qt.TransformationMode.SmoothTransformation))
+        self.controlButton.setEnabled(True)
+        self.iconSvgWidget.load('./graphics/video-solid.svg')
+        
         self.controlButton.clicked.disconnect(self.start_recording)
         self.controlButton.clicked.connect(self.stop_recording)
 
+    def set_state_booting_capture(self):
+        self.controlButton.setText('Aufnahme wird gestartet...')
+        self.controlButton.setDisabled(True)
+        self.iconSvgWidget.load('./graphics/circle-notch-solid-animated.svg')
+    
+    def set_state_evaluating(self):
+        self.controlButton.setText('Aufnahme wird ausgewertet...')
+        self.controlButton.setDisabled(True)
+        self.iconSvgWidget.load('./graphics/circle-notch-solid-animated.svg')
+
     # called directly from main, to handle when we know rec has actually stopped
-    def handle_ui_stop(self):
+    def set_state_ready_to_record(self):
         self.controlButton.setText('Nochmal aufzeichnen')
-        self.iconLabel.setPixmap(QPixmap('./graphics/video-slash-solid.svg').scaledToHeight(50, Qt.TransformationMode.SmoothTransformation))
+        self.controlButton.setEnabled(True)
+        self.iconSvgWidget.load('./graphics/video-slash-solid.svg')
+        
         self.controlButton.clicked.connect(self.start_recording)
-        self.controlButton.clicked.disconnect(self.stop_recording)
+        #self.controlButton.clicked.disconnect(self.stop_recording)
