@@ -73,8 +73,10 @@ class RecordingWidget(QWidget):
         self.iconSvgWidget.load('./graphics/video-solid.svg')
         self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
         
-        self.controlButton.clicked.disconnect(self.start_recording)
         self.controlButton.clicked.connect(self.stop_recording)
+        try:
+            self.controlButton.clicked.disconnect(self.start_recording)
+        except: pass
 
     def set_state_booting_capture(self):
         self.controlButton.setText('Aufnahme wird gestartet...')
@@ -96,4 +98,7 @@ class RecordingWidget(QWidget):
         self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
         
         self.controlButton.clicked.connect(self.start_recording)
-        self.controlButton.clicked.disconnect(self.stop_recording)
+        try:
+            self.controlButton.clicked.disconnect(self.stop_recording)
+        except: 
+            pass
