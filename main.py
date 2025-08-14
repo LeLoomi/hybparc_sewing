@@ -1,7 +1,7 @@
 import cv2 as cv
 import threading
 import requests
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from welcome_widget import WelcomeWidget
 from recording_widget import RecordingWidget
@@ -26,6 +26,9 @@ class MainWindow(QMainWindow):
     recorded_frames: list[cv.typing.MatLike] = list()
     processed_frames: list[cv.typing.MatLike] = list()
     
+    show_results_signal = pyqtSignal()
+    current_result = 0
+    
     # Entry into the GUI
     def __init__(self):
         self.log('✌️  Booting up.')
@@ -34,8 +37,9 @@ class MainWindow(QMainWindow):
         # Window setup
         self.showMaximized()
         self.setWindowTitle('Hybparc Sewing Training')
-        # ! self.show_welcome_widget()
-        self.show_recording_widget()
+        self.show_welcome_widget()
+        
+        self.show_results_signal.connect(self.show_results_widget)
 
     # Welcome screen on the 
     def show_welcome_widget(self):
@@ -53,7 +57,7 @@ class MainWindow(QMainWindow):
     
     def show_results_widget(self):
         self.log(f'📺 Displaying results widget.')
-        self.results_widget = ResultsWidget()
+        self.results_widget = ResultsWidget(result_to_display=self.current_result)
         self.setCentralWidget(self.results_widget)
     
     def start_recording(self):
@@ -178,10 +182,12 @@ class MainWindow(QMainWindow):
         
         # ! Model call happens here
         # We have modified predict_mitz() to return the result instead of printing it!
-        self.log(predict_mitz.main("test-lul", self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64))
-        
+        self.current_result = predict_mitz.main("test-lul", self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64)[0][1]
+
         # we are done with eval and so actually ready to rerecord if user wants [Search REF002]
         self.recording_widget.set_state_ready_to_record_signal.emit()
+        
+        self.show_results_signal.emit()
 
     def log(self, message: str):
         print(f'[Hybparc] {message}')
