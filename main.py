@@ -13,14 +13,15 @@ class MainWindow(QMainWindow):
     GP_IP = '172.29.197.51'         # GP http endpoint, for IP check official gp docs
     GP_HTTP_PORT = '8080'
     GP_UDP_PORT = '8554'            # UDP Port, 8554 = default
-    GP_RES = '480'                 # ! stream res, supported: 480, 720, 1080
+    GP_RES = '480'                  # ! stream res, supported: 480, 720, 1080
     FFMPEG_FLAGS = '?overrun_nonfatal=1'   # ffmpeg buffer overflow = ignored lol
-    CAP_RES = (848, 480)          # ! must match the RES param and GP ratio
+    CAP_RES = (848, 480)            # ! must match the RES param and GP ratio
     REAL_FPS = 30.0                 # GoPro default should be 30.0 i think
     TARGET_FPS = 5                  # needs to be a fraction of REAL_FPS
     CAM_API = cv.CAP_ANY
     FOURCC = cv.VideoWriter.fourcc(*'MJPG')
-    RECORDING_LENGTH = 15#5*60         # in seconds
+    RECORDING_LENGTH = 15#5*60      # in seconds
+    MODEL_ERROR_FRAME_PADDING = 15  # in seconds, the time for which we don't actually run the model to prevent crashes due to "not enough frames"
     
     recording = False   # don't touch
     recorded_frames: list[cv.typing.MatLike] = list()
@@ -182,7 +183,10 @@ class MainWindow(QMainWindow):
         
         # ! Model call happens here
         # We have modified predict_mitz() to return the result instead of printing it!
-        self.current_result = predict_mitz.main("test-lul", self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64)[0][1]
+        if(len(self.processed_frames) < self.MODEL_ERROR_FRAME_PADDING*self.TARGET_FPS):
+            self.current_result = -1
+        else:
+            self.current_result = predict_mitz.main("test-lul", self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64)[0][1]
 
         # we are done with eval and so actually ready to rerecord if user wants [Search REF002]
         self.recording_widget.set_state_ready_to_record_signal.emit()
