@@ -17,6 +17,7 @@ class RecordingWidget(QWidget):
 
         textLabel = QLabel('Drücke auf Start um zu beginnen.<br>Danach wird aufgezeichnet bis du stop drückst.')
         textLabel.setTextFormat(Qt.TextFormat.RichText)
+        textLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         font = textLabel.font()
         font.setPointSize(32)
@@ -33,18 +34,26 @@ class RecordingWidget(QWidget):
         
         self.iconSvgWidget = QSvgWidget('./graphics/video-slash-solid.svg')
         self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio) # pyright: ignore[reportOptionalMemberAccess]
-        self.iconSvgWidget.setFixedSize(50, 50)
+        self.iconSvgWidget.setFixedSize(55, 55)
         
-        buttonLayout = QHBoxLayout()
-        buttonLayout.addStretch()
-        buttonLayout.addWidget(self.iconSvgWidget)
-        buttonLayout.addWidget(self.controlButton)
-        buttonLayout.addStretch()
+        self.countdownLabel = QLabel("TIME")
+        cd_font = font
+        cd_font.setPointSize(48)
+        self.countdownLabel.setFont(font)
+        self.countdownLabel.font
+        
+        timeIconLayout = QHBoxLayout()
+        timeIconLayout.setSpacing(30)
+        timeIconLayout.addStretch()
+        timeIconLayout.addWidget(self.iconSvgWidget)
+        timeIconLayout.addWidget(self.countdownLabel)
+        timeIconLayout.addStretch()
         
         contentLayout = QVBoxLayout()
         contentLayout.addStretch()
         contentLayout.addLayout(iconTextLayout)
-        contentLayout.addLayout(buttonLayout)
+        contentLayout.addLayout(timeIconLayout)
+        contentLayout.addWidget(self.controlButton)
         contentLayout.addStretch()
 
         mainLayout = QHBoxLayout()
@@ -100,4 +109,11 @@ class RecordingWidget(QWidget):
         try:
             self.controlButton.clicked.disconnect(self.stop_recording)
         except: 
+            pass
+    
+    def updateCountdownTime(self, newTime):
+        # scrappy asf but its fine for now
+        try:
+            self.countdownLabel.setText(newTime)
+        except:
             pass

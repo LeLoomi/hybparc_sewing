@@ -24,6 +24,7 @@ class MainWindow(QMainWindow):
     MODEL_ERROR_FRAME_PADDING = 15          # in seconds, the time for which we don't actually run the model to prevent crashes due to "not enough frames"
     
     recording = False   # don't touch
+    start_recording_timer_signal = pyqtSignal()
     recorded_frames: list[cv.typing.MatLike] = list()
     processed_frames: list[Image.Image] = list()
     
@@ -40,6 +41,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Hybparc Sewing Training')
         self.show_welcome_widget()
         
+        self.start_recording_timer_signal.connect(self.start_recording_timer)
         self.show_results_signal.connect(self.show_results_widget)
 
     # Welcome screen on the 
@@ -52,6 +54,7 @@ class MainWindow(QMainWindow):
     def show_recording_widget(self):
         self.log('📺 Displaying recording widget.')
         self.recording_widget = RecordingWidget()
+        self.recording_widget.updateCountdownTime(self.prettify_min_sec(self.RECORDING_LENGTH * 1000))  # time 1000 since method takes msec 
         self.recording_widget.start_recording_signal.connect(self.start_recording)
         self.recording_widget.stop_recording_signal.connect(self.stop_recording)
         self.setCentralWidget(self.recording_widget)
@@ -86,13 +89,51 @@ class MainWindow(QMainWindow):
         
         self.log('📸 Starting to record.')
     
-    def handle_timeout(self):
+    def start_recording_timer(self):
+        # recordingTimer
+        self.uiClock = QTimer()
+        self.recordingTimer = QTimer()
+        self.recordingTimer.setSingleShot(True)
+        self.recordingTimer.timeout.connect(self.handle_recording_timeout)
+        self.recordingTimer.start(self.RECORDING_LENGTH * 1000)
+        self.uiClock.timeout.connect(self.handle_ui_clock_timeout)
+        self.uiClock.start(200)
+    
+    def handle_recording_timeout(self):
         if(self.recording):
             self.log(f'⏰ Recording time ran out after {round(self.RECORDING_LENGTH)} seconds.')
+            self.uiClock.stop()
             self.stop_recording()
     
+    def handle_ui_clock_timeout(self):
+        self.recording_widget.updateCountdownTime(
+            self.prettify_min_sec(self.recordingTimer.remainingTime()))
+    
+    def prettify_min_sec(self, msec: int) -> str:
+        if(msec < 0):
+            return "00:00"
+        
+        sec_int: int = int(round((msec / 1000) % 60))
+        min_int: int = int(round((msec/ 1000) // 60))
+        
+        if(sec_int < 10):
+            sec_str: str = f"0{sec_int}"
+        else:
+            sec_str: str = f"{sec_int}"
+        
+        if(min_int == 0):
+            min_str: str = f"00"
+        elif(min_int < 10):
+            min_str: str = f"0{min_int}"
+        else:
+            min_str: str = f"{sec_int}"
+        
+        return f'{min_str}:{sec_str}'
+    
     def stop_recording(self):
-        if(self.timer.isActive): self.timer.stop()  # in case the user pressed "stop recording"
+        if(self.recordingTimer.isActive): 
+            self.recordingTimer.stop()  # in case the user pressed "stop recording"
+            self.uiClock
         
         self.recording = False
         self.rec_thread.join()  # wait for thread to wrap up before doing rest of cleanup to prevent race cond.
@@ -137,8 +178,7 @@ class MainWindow(QMainWindow):
         total_frames = 0
         self.recorded_frames.clear()
 
-        self.timer = QTimer()
-        self.timer.singleShot(self.RECORDING_LENGTH * 1000, self.handle_timeout)
+        self.start_recording_timer_signal.emit()
 
         while self.recording:
             ret, frame = self.stream.read()
