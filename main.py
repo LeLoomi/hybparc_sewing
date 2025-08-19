@@ -59,6 +59,7 @@ class MainWindow(QMainWindow):
     def show_results_widget(self):
         self.log(f'📺 Displaying results widget.')
         self.results_widget = ResultsWidget(result_to_display=self.current_result)
+        self.results_widget.new_try_requested_signal.connect(self.show_recording_widget)
         self.setCentralWidget(self.results_widget)
     
     def start_recording(self):
