@@ -1,7 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QPushButton
 from PyQt6.QtGui import QColor, QIcon, QPixmap, QPainter
 from PyQt6.QtCore import Qt, pyqtSignal, QSize
-from PyQt6.QtSvgWidgets import QSvgWidget
 
 class ResultsWidget(QWidget):
     new_try_requested_signal = pyqtSignal()
@@ -9,9 +8,6 @@ class ResultsWidget(QWidget):
     star_size: QSize = QSize(90, 90)
     grey: QColor = QColor.fromString("#C3C3C3")
     jelly_blue: QColor = QColor.fromString("#4287f5")
-    full_yellow: QColor = QColor.fromString("#deac00")
-    light_green: QColor = QColor.fromString("#75ba00")
-    jelly_green: QColor = QColor.fromString("#05b12f")
     
     def __init__(self, result_to_display: int):
         super().__init__()

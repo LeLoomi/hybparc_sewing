@@ -1,6 +1,5 @@
 import cv2 as cv
 import requests
-import threading
 
 ROOT = '172.29.197.51:8080'     # GP http endpoint 
 RES = '1080'                    # stream res, supported: 480, 720, 1080

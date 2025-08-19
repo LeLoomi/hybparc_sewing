@@ -1,5 +1,4 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QPushButton
-from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtSvgWidgets import QSvgWidget
 
@@ -33,7 +32,7 @@ class RecordingWidget(QWidget):
         self.controlButton.setFont(font)
         
         self.iconSvgWidget = QSvgWidget('./graphics/video-slash-solid.svg')
-        self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
+        self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio) # pyright: ignore[reportOptionalMemberAccess]
         self.iconSvgWidget.setFixedSize(50, 50)
         
         buttonLayout = QHBoxLayout()
@@ -71,7 +70,7 @@ class RecordingWidget(QWidget):
         self.controlButton.setText('Aufzeichnung stoppen')
         self.controlButton.setEnabled(True)
         self.iconSvgWidget.load('./graphics/video-solid.svg')
-        self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
+        self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio) # pyright: ignore[reportOptionalMemberAccess]
         
         self.controlButton.clicked.connect(self.stop_recording)
         try:
@@ -82,20 +81,20 @@ class RecordingWidget(QWidget):
         self.controlButton.setText('Aufnahme wird gestartet...')
         self.controlButton.setDisabled(True)
         self.iconSvgWidget.load('./graphics/circle-notch-solid-animated.svg')
-        self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
+        self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio) # pyright: ignore[reportOptionalMemberAccess]
     
     def set_state_evaluating(self):
         self.controlButton.setText('Aufnahme wird ausgewertet...')
         self.controlButton.setDisabled(True)
         self.iconSvgWidget.load('./graphics/circle-notch-solid-animated.svg')
-        self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
+        self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio) # pyright: ignore[reportOptionalMemberAccess]
 
     # called directly from main, to handle when we know rec has actually stopped
     def set_state_ready_to_record(self):
         self.controlButton.setText('Nochmal aufzeichnen')
         self.controlButton.setEnabled(True)
         self.iconSvgWidget.load('./graphics/video-slash-solid.svg')
-        self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
+        self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio) # pyright: ignore[reportOptionalMemberAccess]
         
         self.controlButton.clicked.connect(self.start_recording)
         try:

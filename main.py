@@ -10,25 +10,25 @@ from aachen_suturing import predict_mitz
 from PIL import Image
 
 class MainWindow(QMainWindow):
-    GP_IP = '172.29.197.51'         # GP http endpoint, for IP check official gp docs
-    GP_HTTP_PORT = '8080'
-    GP_UDP_PORT = '8554'            # UDP Port, 8554 = default
-    GP_RES = '480'                  # ! stream res, supported: 480, 720, 1080
-    FFMPEG_FLAGS = '?overrun_nonfatal=1'   # ffmpeg buffer overflow = ignored lol
-    CAP_RES = (848, 480)            # ! must match the RES param and GP ratio
-    REAL_FPS = 30.0                 # GoPro default should be 30.0 i think
-    TARGET_FPS = 5                  # needs to be a fraction of REAL_FPS
-    CAM_API = cv.CAP_ANY
+    GP_IP: str = '172.29.197.51'            # GP http endpoint, for IP check official gp docs
+    GP_HTTP_PORT: str = '8080'
+    GP_UDP_PORT: str = '8554'               # UDP Port, 8554 = default
+    GP_RES = '480'                          # ! stream res, supported: 480, 720, 1080
+    FFMPEG_FLAGS = '?overrun_nonfatal=1'    # ffmpeg buffer overflow = ignored lol
+    CAP_RES: tuple[int, int] = (848, 480)   # ! must match the RES param and GP ratio
+    REAL_FPS = 30.0                         # GoPro default should be 30.0 i think
+    TARGET_FPS = 5                          # needs to be a fraction of REAL_FPS
+    CAM_API = cv.CAP_ANY 
     FOURCC = cv.VideoWriter.fourcc(*'MJPG')
-    RECORDING_LENGTH = 15#5*60      # in seconds
-    MODEL_ERROR_FRAME_PADDING = 15  # in seconds, the time for which we don't actually run the model to prevent crashes due to "not enough frames"
+    RECORDING_LENGTH = 15#5*60              # in seconds, the time for which we roughly record
+    MODEL_ERROR_FRAME_PADDING = 15          # in seconds, the time for which we don't actually run the model to prevent crashes due to "not enough frames"
     
     recording = False   # don't touch
     recorded_frames: list[cv.typing.MatLike] = list()
-    processed_frames: list[cv.typing.MatLike] = list()
+    processed_frames: list[Image.Image] = list()
     
     show_results_signal = pyqtSignal()
-    current_result = 0
+    current_result: int = 0
     
     # Entry into the GUI
     def __init__(self):

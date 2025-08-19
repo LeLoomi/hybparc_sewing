@@ -9,6 +9,10 @@ General requirements
 
 > TBD
 
+Trivia
+------
+- Recommeded to use Pylance with type checking mode 'Standard'
+
 Linux specific adjustments
 --------------------------
 
