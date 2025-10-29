@@ -4,6 +4,7 @@ import requests
 from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from welcome_widget import WelcomeWidget
+from preflightcheck_widget import PreflightCheckWidget
 from recording_widget import RecordingWidget
 from results_widget import ResultsWidget
 from aachen_suturing import predict_mitz
@@ -20,7 +21,7 @@ class MainWindow(QMainWindow):
     TARGET_FPS = 5                          # needs to be a fraction of REAL_FPS
     CAM_API = cv.CAP_ANY 
     FOURCC = cv.VideoWriter.fourcc(*'MJPG')
-    RECORDING_LENGTH = 15#5*60              # in seconds, the time for which we roughly record
+    RECORDING_LENGTH = 5*60              # in seconds, the time for which we roughly record
     MODEL_ERROR_FRAME_PADDING = 15          # in seconds, the time for which we don't actually run the model to prevent crashes due to "not enough frames"
     
     recording = False   # don't touch
@@ -48,8 +49,15 @@ class MainWindow(QMainWindow):
     def show_welcome_widget(self):
         self.log('📺 Displaying welcome widget.')
         welcome_widget = WelcomeWidget()
-        welcome_widget.start_pressed.connect(self.show_recording_widget)
+        welcome_widget.start_pressed.connect(self.show_prefligh_check_widget)
         self.setCentralWidget(welcome_widget)
+
+    def show_prefligh_check_widget(self):
+        self.log('📺 Displaying preflight check widget.')
+        precheckWidget = PreflightCheckWidget(self.GP_IP, self.GP_HTTP_PORT)
+        precheckWidget.precheck_completed_signal.connect(self.show_recording_widget)
+        self.setCentralWidget(precheckWidget)
+        precheckWidget.check_camera()   # if camera is available, we even skip the check visually most of the time
 
     def show_recording_widget(self):
         self.log('📺 Displaying recording widget.')
@@ -234,7 +242,8 @@ class MainWindow(QMainWindow):
         
         self.show_results_signal.emit()
 
-    def log(self, message: str):
+    @staticmethod
+    def log(message: str):
         print(f'[Hybparc] {message}')
 
 if __name__ == "__main__":
