@@ -15,12 +15,12 @@ class RecordingWidget(QWidget):
     def __init__(self):
         super().__init__()
 
-        textLabel = QLabel('Drücke auf Start um zu beginnen.<br>Danach wird aufgezeichnet bis du stop drückst.')
+        textLabel = QLabel('Drücke auf Start um zu beginnen.<br>Danach wird aufgezeichnet, bis du stop drückst, oder der Timer abläuft.')
         textLabel.setTextFormat(Qt.TextFormat.RichText)
         textLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         font = textLabel.font()
-        font.setPointSize(32)
+        font.setPointSize(28)
         textLabel.setFont(font)
 
         iconTextLayout = QHBoxLayout()
@@ -51,9 +51,11 @@ class RecordingWidget(QWidget):
         
         contentLayout = QVBoxLayout()
         contentLayout.addStretch()
+        contentLayout.setSpacing(10)
         contentLayout.addLayout(iconTextLayout)
         contentLayout.addLayout(timeIconLayout)
         contentLayout.addWidget(self.controlButton)
+        contentLayout.setAlignment(self.controlButton, Qt.AlignmentFlag.AlignHCenter)
         contentLayout.addStretch()
 
         mainLayout = QHBoxLayout()
