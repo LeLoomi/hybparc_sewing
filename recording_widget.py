@@ -20,7 +20,7 @@ class RecordingWidget(QWidget):
         textLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         font = textLabel.font()
-        font.setPointSize(32)
+        font.setPointSize(28)
         textLabel.setFont(font)
 
         iconTextLayout = QHBoxLayout()

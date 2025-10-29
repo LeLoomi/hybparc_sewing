@@ -27,7 +27,7 @@ class WelcomeWidget(QWidget):
         textLabel.setTextFormat(Qt.TextFormat.RichText)
 
         font = textLabel.font()
-        font.setPointSize(32)
+        font.setPointSize(28)
         textLabel.setFont(font)
 
         startButton = QPushButton("Weiter")
