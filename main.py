@@ -233,7 +233,7 @@ class MainWindow(QMainWindow):
         # ! Model call happens here
         # We have modified predict_mitz() to return the result instead of printing it!
         if(len(self.processed_frames) < self.MODEL_ERROR_FRAME_PADDING*self.TARGET_FPS):
-            self.current_result = -1
+            self.current_result = 0 # ! If we discard the result for to less frames we just assume the lowest rating, since this only happens under ~15s or smth
         else:
             self.current_result = predict_mitz.main("test-lul", self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64)[0][1]
 
