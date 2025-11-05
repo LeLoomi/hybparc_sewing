@@ -62,7 +62,7 @@ class MainWindow(QMainWindow):
     def show_recording_widget(self):
         self.log('📺 Displaying recording widget.')
         self.recording_widget = RecordingWidget()
-        self.recording_widget.updateCountdownTime(self.prettify_min_sec(self.RECORDING_LENGTH * 1000))  # time 1000 since method takes msec 
+        self.recording_widget.updateCountdownTime(self.prettify_min_sec(self.RECORDING_LENGTH * 1000))  # times 1000 since method takes msec 
         self.recording_widget.start_recording_signal.connect(self.start_recording)
         self.recording_widget.stop_recording_signal.connect(self.stop_recording)
         self.setCentralWidget(self.recording_widget)
@@ -117,27 +117,6 @@ class MainWindow(QMainWindow):
         self.recording_widget.updateCountdownTime(
             self.prettify_min_sec(self.recordingTimer.remainingTime()))
     
-    def prettify_min_sec(self, msec: int) -> str:
-        if(msec < 0):
-            return "00:00"
-        
-        sec_int: int = int(round((msec / 1000) % 60))
-        min_int: int = int(round((msec/ 1000) // 60))
-        
-        if(sec_int < 10):
-            sec_str: str = f"0{sec_int}"
-        else:
-            sec_str: str = f"{sec_int}"
-        
-        if(min_int == 0):
-            min_str: str = f"00"
-        elif(min_int < 10):
-            min_str: str = f"0{min_int}"
-        else:
-            min_str: str = f"{sec_int}"
-        
-        return f'{min_str}:{sec_str}'
-    
     def stop_recording(self):
         if(self.recordingTimer.isActive): 
             self.recordingTimer.stop()  # in case the user pressed "stop recording"
@@ -168,7 +147,6 @@ class MainWindow(QMainWindow):
         # we reanable it at the end of process_frames() :) [Search REF002]
         self.recording_widget.set_state_evaluating_signal.emit()
         
-    
     def record(self):
         # Set up capture
         self.stream = cv.VideoCapture(f'udp://@:{self.GP_UDP_PORT}{self.FFMPEG_FLAGS}', apiPreference=self.CAM_API)
@@ -202,7 +180,27 @@ class MainWindow(QMainWindow):
         self.stream.release()
         self.log(f'💾 Recorded {len(self.recorded_frames)} frames (ca. {len(self.recorded_frames) / self.TARGET_FPS}s).')
 
-
+    def prettify_min_sec(self, msec: int) -> str:
+        if(msec < 0):
+            return "00:00"
+        
+        sec_int: int = int(round((msec / 1000) % 60))
+        min_int: int = int(round((msec/ 1000) // 60))
+        
+        if(sec_int < 10):
+            sec_str: str = f"0{sec_int}"
+        else:
+            sec_str: str = f"{sec_int}"
+        
+        if(min_int == 0):
+            min_str: str = f"00"
+        elif(min_int < 10):
+            min_str: str = f"0{min_int}"
+        else:
+            min_str: str = f"{sec_int}"
+        
+        return f'{min_str}:{sec_str}'
+    
     def process_frames(self):
         self.processed_frames.clear()
         
