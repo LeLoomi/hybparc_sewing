@@ -110,17 +110,19 @@ class MainWindow(QMainWindow):
     def handle_recording_timeout(self):
         if(self.recording):
             self.log(f'⏰ Recording time ran out after {round(self.RECORDING_LENGTH)} seconds.')
-            self.uiClock.stop()
             self.stop_recording()
     
     def handle_ui_clock_timeout(self):
+        t = self.recordingTimer.remainingTime()
+        print(f"ui clock to, {t}")
         self.recording_widget.updateCountdownTime(
-            self.prettify_min_sec(self.recordingTimer.remainingTime()))
+            self.prettify_min_sec(t))
     
     def stop_recording(self):
-        if(self.recordingTimer.isActive): 
+        if(self.recordingTimer.isActive()): 
             self.recordingTimer.stop()  # in case the user pressed "stop recording"
-            self.uiClock
+        if(self.uiClock.isActive()):
+            self.uiClock.stop()
         
         self.recording = False
         self.rec_thread.join()  # wait for thread to wrap up before doing rest of cleanup to prevent race cond.
