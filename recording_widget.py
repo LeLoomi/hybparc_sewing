@@ -102,7 +102,7 @@ class RecordingWidget(QWidget):
 
     # called directly from main, to handle when we know rec has actually stopped
     def set_state_ready_to_record(self):
-        self.controlButton.setText('Nochmal aufzeichnen')
+        self.controlButton.setText('Erneuter Durchlauf')
         self.controlButton.setEnabled(True)
         self.iconSvgWidget.load('./graphics/video-slash-solid.svg')
         self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio) # pyright: ignore[reportOptionalMemberAccess]
