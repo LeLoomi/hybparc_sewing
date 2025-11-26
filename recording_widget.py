@@ -28,7 +28,7 @@ class RecordingWidget(QWidget):
         iconTextLayout.addWidget(textLabel)
         iconTextLayout.addStretch()
 
-        self.controlButton = QPushButton('Aufzeichnung starten')
+        self.controlButton = QPushButton('Durchlauf starten')
         self.controlButton.clicked.connect(self.start_recording)
         self.controlButton.setFont(font)
         
@@ -78,7 +78,7 @@ class RecordingWidget(QWidget):
 
     # called directly from main, to handle when we know rec has actually started
     def set_state_recording(self):
-        self.controlButton.setText('Aufzeichnung stoppen')
+        self.controlButton.setText('Frühzeitig abgeben')
         self.controlButton.setEnabled(True)
         self.iconSvgWidget.load('./graphics/video-solid.svg')
         self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio) # pyright: ignore[reportOptionalMemberAccess]
