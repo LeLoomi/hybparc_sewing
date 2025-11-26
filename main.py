@@ -5,6 +5,7 @@ from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from welcome_widget import WelcomeWidget
 from preflightcheck_widget import PreflightCheckWidget
+from task_widget import TaskWidget
 from recording_widget import RecordingWidget
 from cleanup_widget import CleanupWidget
 from results_widget import ResultsWidget
@@ -56,9 +57,15 @@ class MainWindow(QMainWindow):
     def show_prefligh_check_widget(self):
         self.log('📺 Displaying preflight check widget.')
         precheckWidget = PreflightCheckWidget(self.GP_IP, self.GP_HTTP_PORT)
-        precheckWidget.precheck_completed_signal.connect(self.show_recording_widget)
+        precheckWidget.precheck_completed_signal.connect(self.show_task_widget)
         self.setCentralWidget(precheckWidget)
         precheckWidget.check_camera()   # if camera is available, we even skip the check visually most of the time
+
+    def show_task_widget(self):
+        self.log(f'📺 Displaying cleanup widget.')
+        self.task_widget = TaskWidget()
+        self.task_widget.continue_pressed.connect(self.show_recording_widget)
+        self.setCentralWidget(self.task_widget)
 
     def show_recording_widget(self):
         self.log('📺 Displaying recording widget.')
