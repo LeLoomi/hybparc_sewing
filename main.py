@@ -6,12 +6,13 @@ from PyQt6.QtWidgets import QApplication, QMainWindow
 from welcome_widget import WelcomeWidget
 from preflightcheck_widget import PreflightCheckWidget
 from recording_widget import RecordingWidget
+from cleanup_widget import CleanupWidget
 from results_widget import ResultsWidget
 from aachen_suturing import predict_mitz
 from PIL import Image
 
 class MainWindow(QMainWindow):
-    GP_IP: str = '172.29.197.51'            # GP http endpoint, for IP check official gp docs
+    GP_IP: str = '172.25.190.51'            # GP http endpoint, for IP check official gp docs
     GP_HTTP_PORT: str = '8080'
     GP_UDP_PORT: str = '8554'               # UDP Port, 8554 = default
     GP_RES = '480'                          # ! stream res, supported: 480, 720, 1080
@@ -21,7 +22,7 @@ class MainWindow(QMainWindow):
     TARGET_FPS = 5                          # needs to be a fraction of REAL_FPS
     CAM_API = cv.CAP_ANY 
     FOURCC = cv.VideoWriter.fourcc(*'MJPG')
-    RECORDING_LENGTH = 5*60              # in seconds, the time for which we roughly record
+    RECORDING_LENGTH = 5*60                 # in seconds, the time for which we roughly record
     MODEL_ERROR_FRAME_PADDING = 15          # in seconds, the time for which we don't actually run the model to prevent crashes due to "not enough frames"
     
     recording = False   # don't touch
@@ -29,7 +30,7 @@ class MainWindow(QMainWindow):
     recorded_frames: list[cv.typing.MatLike] = list()
     processed_frames: list[Image.Image] = list()
     
-    show_results_signal = pyqtSignal()
+    show_cleanup_widget_signal = pyqtSignal()
     current_result: int = 0
     
     # Entry into the GUI
@@ -43,7 +44,7 @@ class MainWindow(QMainWindow):
         self.show_welcome_widget()
         
         self.start_recording_timer_signal.connect(self.start_recording_timer)
-        self.show_results_signal.connect(self.show_results_widget)
+        self.show_cleanup_widget_signal.connect(self.show_cleanup_widget)
 
     # Welcome screen on the 
     def show_welcome_widget(self):
@@ -66,6 +67,12 @@ class MainWindow(QMainWindow):
         self.recording_widget.start_recording_signal.connect(self.start_recording)
         self.recording_widget.stop_recording_signal.connect(self.stop_recording)
         self.setCentralWidget(self.recording_widget)
+    
+    def show_cleanup_widget(self):
+        self.log(f'📺 Displaying cleanup widget.')
+        self.cleanup_widget = CleanupWidget()
+        self.cleanup_widget.continue_pressed.connect(self.show_results_widget)
+        self.setCentralWidget(self.cleanup_widget)
     
     def show_results_widget(self):
         self.log(f'📺 Displaying results widget.')
@@ -240,7 +247,7 @@ class MainWindow(QMainWindow):
         # we are done with eval and so actually ready to rerecord if user wants [Search REF002]
         self.recording_widget.set_state_ready_to_record_signal.emit()
         
-        self.show_results_signal.emit()
+        self.show_cleanup_widget_signal.emit()
 
     @staticmethod
     def log(message: str):
