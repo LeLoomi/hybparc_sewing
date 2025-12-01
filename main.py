@@ -11,6 +11,7 @@ from cleanup_widget import CleanupWidget
 from results_widget import ResultsWidget
 from aachen_suturing import predict_mitz
 from PIL import Image
+from playsound3 import playsound
 
 class MainWindow(QMainWindow):
     GP_IP: str = '172.25.190.51'            # GP http endpoint, for IP check official gp docs
@@ -23,10 +24,11 @@ class MainWindow(QMainWindow):
     TARGET_FPS = 5                          # needs to be a fraction of REAL_FPS
     CAM_API = cv.CAP_ANY 
     FOURCC = cv.VideoWriter.fourcc(*'MJPG')
-    RECORDING_LENGTH = 5*60                 # in seconds, the time for which we roughly record
+    RECORDING_LENGTH = 15# 5*60                 # in seconds, the time for which we roughly record
     MODEL_ERROR_FRAME_PADDING = 15          # in seconds, the time for which we don't actually run the model to prevent crashes due to "not enough frames"
     
     recording = False   # don't touch
+    halftime_sound_played = False
     start_recording_timer_signal = pyqtSignal()
     recorded_frames: list[cv.typing.MatLike] = list()
     processed_frames: list[Image.Image] = list()
@@ -38,7 +40,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         self.log('✌️  Booting up.')
         super().__init__()
-        
+                
         # Window setup
         self.showMaximized()
         self.setWindowTitle('Hybparc Sewing Training')
@@ -124,13 +126,17 @@ class MainWindow(QMainWindow):
     def handle_recording_timeout(self):
         if(self.recording):
             self.log(f'⏰ Recording time ran out after {round(self.RECORDING_LENGTH)} seconds.')
+            playsound("./sounds/end.wav")
             self.stop_recording()
     
     def handle_ui_clock_timeout(self):
         t = self.recordingTimer.remainingTime()
-        print(f"ui clock to, {t}")
         self.recording_widget.updateCountdownTime(
             self.prettify_min_sec(t))
+                
+        if(not self.halftime_sound_played and round(t/1000) < round(self.RECORDING_LENGTH/2)):
+            self.halftime_sound_played = True
+            playsound("./sounds/mid.wav")
     
     def stop_recording(self):
         if(self.recordingTimer.isActive()): 
