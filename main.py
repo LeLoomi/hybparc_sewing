@@ -127,6 +127,7 @@ class MainWindow(QMainWindow):
         if(self.recording):
             self.log(f'⏰ Recording time ran out after {round(self.RECORDING_LENGTH)} seconds.')
             playsound("./sounds/end.wav", block=False)
+            self.log('🔔 Timer end sound played.')
             self.stop_recording()
     
     def handle_ui_clock_timeout(self):
@@ -137,6 +138,7 @@ class MainWindow(QMainWindow):
         if(not self.halftime_sound_played and round(t/1000) < round(self.RECORDING_LENGTH/2)):
             self.halftime_sound_played = True
             playsound("./sounds/mid.wav", block=False)
+            self.log('🔔 Timer halftime sound played.')
     
     def stop_recording(self):
         if(self.recordingTimer.isActive()): 
@@ -254,6 +256,7 @@ class MainWindow(QMainWindow):
         # We have modified predict_mitz() to return the result instead of printing it!
         if(len(self.processed_frames) < self.MODEL_ERROR_FRAME_PADDING*self.TARGET_FPS):
             self.current_result = 0 # ! If we discard the result for to less frames we just assume the lowest rating, since this only happens under ~15s or smth
+            self.log('📡 Commanded UDP stream to start.')
         else:
             self.current_result = predict_mitz.main("test-lul", self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64)[0][1]
 
