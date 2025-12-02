@@ -23,8 +23,9 @@ class TaskWidget(QWidget):
         self.m_lineEditName.setMinimumWidth(300)
         self.m_lineEditName.setFont(mediumFont)
 
-        textLabel = QLabel('Nähe an dem Nahtpad so viele Einzelknopfnähte, wie du schaffst. Achte dabei auch auf gute Qualität!<br>Du hast hierfür fünf Minuten Zeit, danach erfolgt die Auswertung.')
+        textLabel = QLabel('Nähe an dem Nahtpad so viele Einzelknopfnähte, wie du schaffst. Achte dabei auch auf gute Qualität!<br>Du hast hierfür fünf Minuten Zeit, danach erfolgt die Auswertung. <br><br>Nach der Hälfte als auch nach Ablauf der Zeit ertönt ein Signal.')
         textLabel.setTextFormat(Qt.TextFormat.RichText)
+        textLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         font = textLabel.font()
         font.setPointSize(28)
