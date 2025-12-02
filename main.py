@@ -126,7 +126,7 @@ class MainWindow(QMainWindow):
     def handle_recording_timeout(self):
         if(self.recording):
             self.log(f'⏰ Recording time ran out after {round(self.RECORDING_LENGTH)} seconds.')
-            playsound("./sounds/end.wav")
+            playsound("./sounds/end.wav", block=False)
             self.stop_recording()
     
     def handle_ui_clock_timeout(self):
@@ -136,7 +136,7 @@ class MainWindow(QMainWindow):
                 
         if(not self.halftime_sound_played and round(t/1000) < round(self.RECORDING_LENGTH/2)):
             self.halftime_sound_played = True
-            playsound("./sounds/mid.wav")
+            playsound("./sounds/mid.wav", block=False)
     
     def stop_recording(self):
         if(self.recordingTimer.isActive()): 
