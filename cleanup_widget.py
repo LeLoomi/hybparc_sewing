@@ -25,6 +25,7 @@ class CleanupWidget(QWidget):
 
         textLabel = QLabel('Bitte räume zuerst deinen Arbeitsplatz auf!<br>Achte vor allem darauf, dass du genutzte Nadeln ordnungsgemäß im <b>Nadelbehälter</b> entsorgst.<br> Bitte entferne auch die Nähte/den Faden wieder aus dem Nahtpad.')
         textLabel.setTextFormat(Qt.TextFormat.RichText)
+        textLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         font = textLabel.font()
         font.setPointSize(28)

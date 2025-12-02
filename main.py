@@ -256,9 +256,11 @@ class MainWindow(QMainWindow):
         # We have modified predict_mitz() to return the result instead of printing it!
         if(len(self.processed_frames) < self.MODEL_ERROR_FRAME_PADDING*self.TARGET_FPS):
             self.current_result = 0 # ! If we discard the result for to less frames we just assume the lowest rating, since this only happens under ~15s or smth
-            self.log('📡 Commanded UDP stream to start.')
+            self.log('⚠️  To few frames collected, defaulting to rating 0 to prevent model crash.')
         else:
+            self.log('🧮 Beginning evaluation.')
             self.current_result = predict_mitz.main("test-lul", self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64)[0][1]
+            self.log(f'👁️ Evaluation complete, rating {self.current_result}.')
 
         # we are done with eval and so actually ready to rerecord if user wants [Search REF002]
         self.recording_widget.set_state_ready_to_record_signal.emit()
