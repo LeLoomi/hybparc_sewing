@@ -95,7 +95,7 @@ class PreflightCheckWidget(QWidget):
     
     def set_state_other_failure(self, message: str):
         self.iconSvgWidget = QSvgWidget('./graphics/video-slash-solid.svg')
-        self.infoLabel.setText(f"Unerwarteter Fehler: <i>{message}</i>.")
+        self.infoLabel.setText(f"Unerwarteter Fehler:<br><tt>{message}</tt><br>Bitte schreibe diesen Fehler auf und melde ihn an das MITZ-Team!")
 
     @staticmethod
     def log(message: str):
