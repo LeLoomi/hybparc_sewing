@@ -23,9 +23,16 @@ class TaskWidget(QWidget):
         self.m_lineEditName.setMinimumWidth(300)
         self.m_lineEditName.setFont(mediumFont)
 
-        textLabel = QLabel('Nähe an dem Nahtpad so viele Einzelknopfnähte, wie du schaffst. Achte dabei auch auf gute Qualität!<br>Du hast hierfür fünf Minuten Zeit, danach erfolgt die Auswertung. <br><br>Nach der Hälfte als auch nach Ablauf der Zeit ertönt ein Signal.')
+        textLabel = QLabel('''<ol>
+                        <li style="margin-bottom: 1em;">Bereite zunächst deine Materialien vor und mach dich mit ihnen vertraut.</li>
+                        <li style="margin-bottom: 1em;">Eine Videoaufzeichnung läuft 5 Minuten. Arbeite während der Aufzeichnung sauber und zügig.</li>
+                        <li style="margin-bottom: 1em;">Führe eine Wundrandadaption mittels Einzelknopfnähten durch. Setze so viele Einzelknopfnähte, wie du schaffst in der Zeit. Beginne die Aufzeichnung mit „Durchlauf starten“.</li>
+                        <li style="margin-bottom: 1em;">Nach Beendigung eines Durchlaufs, kann ein erneuter Durchlauf gestartet werden.</li>
+                        </ol>''')
         textLabel.setTextFormat(Qt.TextFormat.RichText)
-        textLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        textLabel.setWordWrap(True)
+        textLabel.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        textLabel.setFixedWidth(1300)
 
         font = textLabel.font()
         font.setPointSize(28)
@@ -41,7 +48,9 @@ class TaskWidget(QWidget):
         verticalLayout = QVBoxLayout()
         verticalLayout.addStretch()
         verticalLayout.addWidget(headerLabel)
+        verticalLayout.addSpacing(25)
         verticalLayout.addWidget(textLabel)
+        verticalLayout.addSpacing(25)
         verticalLayout.addWidget(startButton)
         verticalLayout.setAlignment(startButton, Qt.AlignmentFlag.AlignHCenter)
         verticalLayout.addStretch()

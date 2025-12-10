@@ -1,4 +1,5 @@
 from PyQt6.QtWidgets import QApplication, QMainWindow
+from cleanup_widget import CleanupWidget as W
 
 class MainWindow(QMainWindow):
     current_result: int = 0
@@ -15,7 +16,8 @@ class MainWindow(QMainWindow):
         
 
     def show_widget(self):
-        pass
+        w = W()
+        self.setCentralWidget(w)
 
     @staticmethod
     def log(message: str):

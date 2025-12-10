@@ -23,7 +23,7 @@ class CleanupWidget(QWidget):
         self.m_lineEditName.setMinimumWidth(300)
         self.m_lineEditName.setFont(mediumFont)
 
-        textLabel = QLabel('Bitte räume zuerst deinen Arbeitsplatz auf!<br>Achte vor allem darauf, dass du genutzte Nadeln ordnungsgemäß im <b>Nadelbehälter</b> entsorgst.<br> Bitte entferne auch die Nähte/den Faden wieder aus dem Nahtpad.')
+        textLabel = QLabel('<h3>Achtung!</h3>Entsorge zunächst alle benutzten Nahtmaterialien und Nadeln im Spitzabwurf und entferne die Nähte am Nahtpad.')
         textLabel.setTextFormat(Qt.TextFormat.RichText)
         textLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -41,6 +41,7 @@ class CleanupWidget(QWidget):
         verticalLayout = QVBoxLayout()
         verticalLayout.addStretch()
         verticalLayout.addWidget(textLabel)
+        verticalLayout.addSpacing(15)
         verticalLayout.addWidget(startButton)
         verticalLayout.setAlignment(startButton, Qt.AlignmentFlag.AlignHCenter)
         verticalLayout.addStretch()
