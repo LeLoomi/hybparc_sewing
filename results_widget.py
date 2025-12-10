@@ -21,9 +21,9 @@ class ResultsWidget(QWidget):
 
         # We use icon here, since SVG -> Icon -> Pixmap has higher base resolution than SVG -> Pixmap pipeline
         starsQIcon = QIcon(f"./graphics/progress_feedback_{self.currentLevel}.svg")
-        starsPixmap = starsQIcon.pixmap(QSize(1095, 155), QIcon.Mode.Normal, QIcon.State.On)
+        starsPixmap = starsQIcon.pixmap(QSize(485, 155), QIcon.Mode.Normal, QIcon.State.On)
         starLabel = QLabel()
-        starLabel.setPixmap(starsPixmap.scaledToHeight(210))
+        starLabel.setPixmap(starsPixmap.scaledToHeight(120, Qt.TransformationMode.SmoothTransformation))
         starLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         textLabel = QLabel(f'{self.levelTexts[self.currentLevel]}')
@@ -44,13 +44,16 @@ class ResultsWidget(QWidget):
         buttonLayout = QHBoxLayout()
         buttonLayout.addStretch()
         buttonLayout.addWidget(self.helpButton)
+        buttonLayout.addSpacing(15)
         buttonLayout.addWidget(self.newTryButton)
         buttonLayout.addStretch()
         
         contentLayout = QVBoxLayout()
         contentLayout.addStretch()
         contentLayout.addWidget(starLabel)
+        contentLayout.addSpacing(20)
         contentLayout.addWidget(textLabel)
+        contentLayout.addSpacing(25)
         contentLayout.addLayout(buttonLayout)
         contentLayout.addStretch()
 

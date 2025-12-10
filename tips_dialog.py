@@ -19,6 +19,7 @@ class TipsDialog(QDialog):
     def __init__(self, level_to_hint_about: int):
         super().__init__()
         self.setWindowTitle("Tips zur Auswertung")
+        self.showMaximized()
         
         textLabel = QLabel(f'<ol>{self.levelHints[level_to_hint_about]}</ol>')
         font = textLabel.font()

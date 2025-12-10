@@ -25,6 +25,8 @@ class CleanupWidget(QWidget):
 
         textLabel = QLabel('<h3>Achtung!</h3>Entsorge zunächst alle benutzten Nahtmaterialien und Nadeln im Spitzabwurf und entferne die Nähte am Nahtpad.')
         textLabel.setTextFormat(Qt.TextFormat.RichText)
+        textLabel.setWordWrap(True)
+        textLabel.setFixedWidth(1200)
         textLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         font = textLabel.font()

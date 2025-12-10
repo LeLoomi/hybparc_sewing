@@ -84,10 +84,12 @@ class RecordingWidget(QWidget):
         self.iconSvgWidget.load('./graphics/video-solid.svg')
         self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio) # pyright: ignore[reportOptionalMemberAccess]
         
-        self.controlButton.clicked.connect(self.stop_recording)
         try:
             self.controlButton.clicked.disconnect(self.start_recording)
         except: pass
+        
+        self.controlButton.clicked.connect(self.stop_recording)
+        self.controlButton.setShortcut(Qt.Key.Key_Return)
 
     def set_state_booting_capture(self):
         self.controlButton.setText('Aufnahme wird gestartet...')
@@ -108,11 +110,13 @@ class RecordingWidget(QWidget):
         self.iconSvgWidget.load('./graphics/video-slash-solid.svg')
         self.iconSvgWidget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio) # pyright: ignore[reportOptionalMemberAccess]
         
-        self.controlButton.clicked.connect(self.start_recording)
         try:
             self.controlButton.clicked.disconnect(self.stop_recording)
         except: 
             pass
+        
+        self.controlButton.clicked.connect(self.start_recording)
+        self.controlButton.setShortcut(Qt.Key.Key_Return)
     
     def updateCountdownTime(self, newTime):
         # scrappy asf but its fine for now
