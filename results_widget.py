@@ -5,7 +5,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QSize
 class ResultsWidget(QWidget):
     new_try_requested_signal = pyqtSignal()
         
-    def __init__(self, result_to_display: int = 0):
+    def __init__(self, starcount_to_display: int = 0):
         super().__init__()
 
         textLabel = QLabel(f'Die Auswertung ist abgeschlossen!')
@@ -16,7 +16,7 @@ class ResultsWidget(QWidget):
         textLabel.setFont(font)
 
         # We use icon here, since SVG -> Icon -> Pixmap has higher base resolution than SVG -> Pixmap pipeline
-        progressIcon = QIcon(f"./graphics/progress_feedback_{result_to_display}.svg")
+        progressIcon = QIcon(f"./graphics/progress_feedback_{starcount_to_display}.svg")
         progressPixmap = progressIcon.pixmap(QSize(1095, 155), QIcon.Mode.Normal, QIcon.State.On)
         progressBarLabel = QLabel()
         progressBarLabel.setPixmap(progressPixmap.scaledToHeight(210))

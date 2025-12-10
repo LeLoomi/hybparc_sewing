@@ -85,7 +85,7 @@ class MainWindow(QMainWindow):
     
     def show_results_widget(self):
         self.log(f'📺 Displaying results widget.')
-        self.results_widget = ResultsWidget(result_to_display=self.current_result)
+        self.results_widget = ResultsWidget(starcount_to_display=self.current_result)
         self.results_widget.new_try_requested_signal.connect(self.show_task_widget)
         self.setCentralWidget(self.results_widget)
     
@@ -259,8 +259,9 @@ class MainWindow(QMainWindow):
             self.log('⚠️  To few frames collected, defaulting to rating 0 to prevent model crash.')
         else:
             self.log('🧮 Beginning evaluation.')
-            self.current_result = predict_mitz.main("test-lul", self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64)[0][1]
-            self.log(f'👁️ Evaluation complete, rating {self.current_result}.')
+            # add 1 to the eval result, since lowest returned level (0) is one star
+            self.current_result = 1 + predict_mitz.main("test-lul", self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64)[0][1]
+            self.log(f'👁️ Evaluation complete, rating {self.current_result} = {self.current_result} star(s).')
 
         # we are done with eval and so actually ready to rerecord if user wants [Search REF002]
         self.recording_widget.set_state_ready_to_record_signal.emit()
