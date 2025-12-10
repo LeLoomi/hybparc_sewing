@@ -30,6 +30,7 @@ class RecordingWidget(QWidget):
 
         self.controlButton = QPushButton('Durchlauf starten')
         self.controlButton.clicked.connect(self.start_recording)
+        self.controlButton.setShortcut(Qt.Key.Key_Return)
         self.controlButton.setFont(font)
         
         self.iconSvgWidget = QSvgWidget('./graphics/video-slash-solid.svg')
