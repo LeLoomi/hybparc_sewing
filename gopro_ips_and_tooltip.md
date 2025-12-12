@@ -9,3 +9,7 @@ Bluetooth Low Energy: By reading directly from Hardware Info
 For example, if the camera's serial number is C0000123456789, the IP address for USB connections would be 172.27.189.51.
 
 Alternatively, the IP address can be discovered via mDNS as the camera registers the _gopro-web service.
+
+MITZ GoPros:
+- "172.29.197.51" (deployed in setup)
+- "172.25.190.51"

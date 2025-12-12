@@ -1,6 +1,8 @@
 import cv2 as cv
 import threading
 import requests
+from sys import argv
+from ipaddress import ip_address
 from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from welcome_widget import WelcomeWidget
@@ -40,7 +42,16 @@ class MainWindow(QMainWindow):
     def __init__(self):
         self.log('✌️  Booting up.')
         super().__init__()
-                
+        
+        try:
+            ip_address(argv[1])
+            self.GP_IP = argv[1]
+            self.log(f'🧭 An IP was provided as run-argument an will be used ({argv[1]}).')
+        except IndexError:
+            self.log(f'📦 No IP provided as run-argument, using default ({self.GP_IP}).')
+        except ValueError:
+            self.log(f'⚠️  Malformed IP provided as run-argument ({argv[1]}). Falling back to default ({self.GP_IP}).')
+        
         # Window setup
         self.showMaximized()
         self.setWindowTitle('Hybparc Sewing Training')
