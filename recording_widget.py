@@ -15,7 +15,9 @@ class RecordingWidget(QWidget):
     def __init__(self):
         super().__init__()
 
-        textLabel = QLabel('Drücke auf Start um zu beginnen.<br>Danach wird aufgezeichnet, bis du stop drückst, oder der Timer abläuft.')
+        textLabel = QLabel('''Drücke auf Start um zu beginnen.
+                            <br>Danach wird aufgezeichnet, bis du stop drückst, oder der Timer abläuft.
+                            <br>Es ertönt ein Signal wenn du mit dem Nähen beginnen kannst, zur Halbzeit, und wenn die Zeit abgelaufen ist.''')
         textLabel.setTextFormat(Qt.TextFormat.RichText)
         textLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
 

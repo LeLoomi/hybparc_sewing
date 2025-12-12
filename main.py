@@ -126,7 +126,7 @@ class MainWindow(QMainWindow):
     def handle_recording_timeout(self):
         if(self.recording):
             self.log(f'⏰ Recording time ran out after {round(self.RECORDING_LENGTH)} seconds.')
-            playsound("./sounds/end.wav", block=False)
+            playsound("./sounds/tissman_alert3-version-8.wav", block=False)
             self.log('🔔 Timer end sound played.')
             self.stop_recording()
     
@@ -137,7 +137,7 @@ class MainWindow(QMainWindow):
                 
         if(not self.halftime_sound_played and round(t/1000) < round(self.RECORDING_LENGTH/2)):
             self.halftime_sound_played = True
-            playsound("./sounds/mid.wav", block=False)
+            playsound("./sounds/tissman_alert3-version-9.wav", block=False)
             self.log('🔔 Timer halftime sound played.')
     
     def stop_recording(self):
@@ -189,6 +189,7 @@ class MainWindow(QMainWindow):
         self.recorded_frames.clear()
 
         self.start_recording_timer_signal.emit()
+        playsound("./sounds/tissman_alert3-version-1.wav", block=False)
 
         while self.recording:
             ret, frame = self.stream.read()
