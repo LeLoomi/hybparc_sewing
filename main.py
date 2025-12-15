@@ -7,6 +7,7 @@ from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from welcome_widget import WelcomeWidget
 from preflightcheck_widget import PreflightCheckWidget
+from alignment_wizard_widget import AlignmentWizardWidget
 from task_widget import TaskWidget
 from recording_widget import RecordingWidget
 from cleanup_widget import CleanupWidget
@@ -16,6 +17,9 @@ from PIL import Image
 from playsound3 import playsound
 
 class MainWindow(QMainWindow):
+    show_cleanup_widget_signal = pyqtSignal()
+    start_recording_timer_signal = pyqtSignal()
+    
     GP_IP: str = '172.25.190.51'            # GP http endpoint, for IP check official gp docs
     GP_HTTP_PORT: str = '8080'
     GP_UDP_PORT: str = '8554'               # UDP Port, 8554 = default
@@ -26,16 +30,14 @@ class MainWindow(QMainWindow):
     TARGET_FPS = 5                          # needs to be a fraction of REAL_FPS
     CAM_API = cv.CAP_ANY 
     FOURCC = cv.VideoWriter.fourcc(*'MJPG')
-    RECORDING_LENGTH = 15# 5*60                 # in seconds, the time for which we roughly record
+    RECORDING_LENGTH = 5*60                 # in seconds, the time for which we roughly record
     MODEL_ERROR_FRAME_PADDING = 15          # in seconds, the time for which we don't actually run the model to prevent crashes due to "not enough frames"
     
     recording = False   # don't touch
     halftime_sound_played = False
-    start_recording_timer_signal = pyqtSignal()
     recorded_frames: list[cv.typing.MatLike] = list()
     processed_frames: list[Image.Image] = list()
     
-    show_cleanup_widget_signal = pyqtSignal()
     current_result: int = 0
     
     # Entry into the GUI
@@ -64,15 +66,31 @@ class MainWindow(QMainWindow):
     def show_welcome_widget(self):
         self.log('📺 Displaying welcome widget.')
         welcome_widget = WelcomeWidget()
-        welcome_widget.start_pressed.connect(self.show_prefligh_check_widget)
+        welcome_widget.start_pressed.connect(self.show_preflight_check_widget)
         self.setCentralWidget(welcome_widget)
 
-    def show_prefligh_check_widget(self):
+    def show_preflight_check_widget(self):
         self.log('📺 Displaying preflight check widget.')
         precheckWidget = PreflightCheckWidget(self.GP_IP, self.GP_HTTP_PORT)
-        precheckWidget.precheck_completed_signal.connect(self.show_task_widget)
+        precheckWidget.precheck_completed_signal.connect(self.show_alignment_wizard_widget)
         self.setCentralWidget(precheckWidget)
         precheckWidget.check_camera()   # if camera is available, we even skip the check visually most of the time
+
+    def show_alignment_wizard_widget(self):
+        self.log('📺 Displaying preflight check widget.')
+        alignment_wizard_widget = AlignmentWizardWidget(
+            self.GP_IP,
+            self.GP_HTTP_PORT,
+            self.GP_UDP_PORT,
+            self.GP_RES,
+            self.CAP_RES,
+            self.REAL_FPS,
+            self.FFMPEG_FLAGS,
+            self.CAM_API,
+            self.FOURCC
+        )
+        alignment_wizard_widget.wizard_done_signal.connect(self.show_task_widget)
+        self.setCentralWidget(alignment_wizard_widget)
 
     def show_task_widget(self):
         self.log(f'📺 Displaying cleanup widget.')
@@ -112,7 +130,7 @@ class MainWindow(QMainWindow):
             self.log(f'🛰️  RC 200, stream is running.')
         else:
             # TODO handle this and retry at least once ngl
-            self.log('🚨 RC was {req.status_code} (expected = 200). \n{req.content}\n\n')
+            self.log(f'🚨 RC was {req.status_code} (expected = 200). \n{req.content}\n\n')
             raise RuntimeError(f'Camera is available at {self.GP_IP}:{self.GP_HTTP_PORT} but failed to start.')
         
         self.recording = True
@@ -274,12 +292,12 @@ class MainWindow(QMainWindow):
             # add 1 to the eval result, since lowest returned level (0) is one star
             self.current_result = 1 + predict_mitz.main("test-lul", self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64)[0][1]
             self.log(f'👁️ Evaluation complete, rating {self.current_result - 1} = {self.current_result} star(s).')
-
+        
         # we are done with eval and so actually ready to rerecord if user wants [Search REF002]
         self.recording_widget.set_state_ready_to_record_signal.emit()
         
         self.show_cleanup_widget_signal.emit()
-
+    
     @staticmethod
     def log(message: str):
         print(f'[Hybparc] {message}')
