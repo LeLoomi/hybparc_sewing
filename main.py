@@ -296,9 +296,9 @@ class MainWindow(QMainWindow):
                 self.log(f'⚠️ HTTP GET timeout under \'{path}\' however panic_on_failure is set to False for this request.')
     
     def handle_application_close(self):
-        self.log('♻️ Application closure initiated, running resource cleanup.')
+        self.log('♻️  Application closure initiated, running resource cleanup.')
         self.send_gopro_command(command_path='/gopro/webcam/exit', panic_on_failure=False)
-        self.send_gopro_command(command_path='/gopro/camera/setting', params={'option':'4','setting':'135'}, panic_on_failure=False)
+        self.send_gopro_command(command_path='/gopro/camera/setting', params={'option':'4','setting':'59'}, panic_on_failure=False)
     
     @staticmethod
     def log(message: str):
