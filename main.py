@@ -43,13 +43,13 @@ class MainWindow(QMainWindow):
     
     # Entry into the GUI
     def __init__(self):
-        self.log('✌️  Booting up.')
+        self.log('✌️  Booting up.', with_spacer=True)
         super().__init__()
         
         try:
             ip_address(argv[1])
             self.GP_IP = argv[1]
-            self.log(f'🧭 An IP was provided as run-argument an will be used ({argv[1]}).')
+            self.log(f'🧭 An IP was provided as run-argument an will be used ({argv[1]}).', with_spacer=True)
         except IndexError:
             self.log(f'📦 No IP provided as run-argument, using default ({self.GP_IP}).')
         except ValueError:
@@ -66,20 +66,20 @@ class MainWindow(QMainWindow):
 
     # Welcome screen on the 
     def show_welcome_widget(self):
-        self.log('📺 Displaying welcome widget.')
+        self.log('📺 Displaying welcome widget.', with_spacer=True)
         welcome_widget = WelcomeWidget()
         welcome_widget.start_pressed.connect(self.show_preflight_check_widget)
         self.setCentralWidget(welcome_widget)
 
     def show_preflight_check_widget(self):
-        self.log('📺 Displaying preflight check widget.')
+        self.log('📺 Displaying preflight check widget.', with_spacer=True)
         precheckWidget = PreflightCheckWidget(self.GP_IP, self.GP_HTTP_PORT)
         precheckWidget.precheck_completed_signal.connect(self.show_alignment_wizard_widget)
         self.setCentralWidget(precheckWidget)
         precheckWidget.check_camera()   # if camera is available, we even skip the check visually most of the time
 
     def show_alignment_wizard_widget(self):
-        self.log('📺 Displaying preflight check widget.')
+        self.log('📺 Displaying alignment wizard widget.', with_spacer=True)
         alignment_wizard_widget = AlignmentWizardWidget(
             self.GP_IP,
             self.GP_HTTP_PORT,
@@ -95,13 +95,13 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(alignment_wizard_widget)
 
     def show_task_widget(self):
-        self.log(f'📺 Displaying cleanup widget.')
+        self.log(f'📺 Displaying cleanup widget.', with_spacer=True)
         self.task_widget = TaskWidget()
         self.task_widget.continue_pressed.connect(self.show_recording_widget)
         self.setCentralWidget(self.task_widget)
 
     def show_recording_widget(self):
-        self.log('📺 Displaying recording widget.')
+        self.log('📺 Displaying recording widget.', with_spacer=True)
         self.recording_widget = RecordingWidget()
         self.recording_widget.updateCountdownTime(self.prettify_min_sec(self.RECORDING_LENGTH * 1000))  # times 1000 since method takes msec 
         self.recording_widget.start_recording_signal.connect(self.start_recording)
@@ -109,7 +109,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.recording_widget)
     
     def show_cleanup_widget(self):
-        self.log(f'📺 Displaying cleanup widget.')
+        self.log(f'📺 Displaying cleanup widget.', with_spacer=True)
         self.cleanup_widget = CleanupWidget()
         self.cleanup_widget.continue_pressed.connect(self.show_results_widget)
         self.setCentralWidget(self.cleanup_widget)
@@ -164,7 +164,7 @@ class MainWindow(QMainWindow):
             playsound('./sounds/tissman_alert3-version-9.wav', block=False)
             self.log('🔔 Timer halftime sound played.')
     
-    def stop_recording(self):
+    def stop_recording(self, is_application_quit=False):
         if(self.recordingTimer.isActive()): 
             self.recordingTimer.stop()  # in case the user pressed 'stop recording'
         if(self.uiClock.isActive()):
@@ -175,6 +175,10 @@ class MainWindow(QMainWindow):
         self.log('📷 Ceasing to record.')
         
         self.send_gopro_command(command_path='/gopro/webcam/stop')
+        
+        if is_application_quit:
+            self.log('☝️  We are in cleanup, omitting recording evaluation.')
+            return
         
         self.recording_widget.set_state_ready_to_record_signal.emit()
         
@@ -296,12 +300,18 @@ class MainWindow(QMainWindow):
                 self.log(f'⚠️ HTTP GET timeout under \'{path}\' however panic_on_failure is set to False for this request.')
     
     def handle_application_close(self):
-        self.log('♻️  Application closure initiated, running resource cleanup.')
+        self.log('♻️  Application closure initiated, running resource cleanup:', with_spacer=True)
+        
+        if self.recording:
+            self.stop_recording(is_application_quit=True)
+        
         self.send_gopro_command(command_path='/gopro/webcam/exit', panic_on_failure=False)
         self.send_gopro_command(command_path='/gopro/camera/setting', params={'option':'4','setting':'59'}, panic_on_failure=False)
     
     @staticmethod
-    def log(message: str):
+    def log(message: str, with_spacer=False):
+        if with_spacer:
+            print('[Hybparc] — — —')
         print(f'[Hybparc] {message}')
 
 if __name__ == '__main__':
