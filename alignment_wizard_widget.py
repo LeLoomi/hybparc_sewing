@@ -2,7 +2,6 @@ from PyQt6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget, QHBoxLayo
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtGui import QFont, QPixmap, QImage
 import requests
-import threading
 import cv2 as cv
 
 class AlignmentWizardWidget(QWidget):
@@ -68,7 +67,7 @@ class AlignmentWizardWidget(QWidget):
         save_new_button.setFont(font)
         save_new_button.clicked.connect(self.save_current)
         save_new_button.setDisabled(True) # ! diabled since we don't have edge detection for the pad.
-        
+
         done_button = QPushButton()
         done_button.setText("Anwendung starten")
         done_button.setFont(font)
@@ -118,13 +117,6 @@ class AlignmentWizardWidget(QWidget):
     
     # refreshes the preview image and reloads the overlay, if necessary / if reload flag is set
     def update_preview(self):
-        if(self.current_overlay is None):
-            try:
-                self.log('Overlay was None.')
-                #self.save_current()
-            except:
-                pass
-        
         if(self.reload_overlay or self.current_overlay is None):
             try:
                 self.current_overlay = cv.imread(self.OVERLAY_PATH)
