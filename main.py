@@ -1,6 +1,7 @@
 import cv2 as cv
 import threading
 import requests
+from enum import Enum
 from sys import argv
 from ipaddress import ip_address
 from PyQt6.QtCore import QTimer, pyqtSignal
@@ -23,15 +24,15 @@ class MainWindow(QMainWindow):
     GP_IP: str = '172.25.190.51'            # GP http endpoint, for IP check official gp docs
     GP_HTTP_PORT: str = '8080'
     GP_UDP_PORT: str = '8554'               # UDP Port, 8554 = default
-    GP_RES = '480'                          # ! stream res, supported: 480, 720, 1080
+    GP_RES = '4'                            # stream res, supported: 4=480, 7=720, 12=1080
     FFMPEG_FLAGS = '?overrun_nonfatal=1'    # ffmpeg buffer overflow = ignored lol
-    CAP_RES: tuple[int, int] = (848, 480)   # ! must match the RES param and GP ratio
+    CAP_RES: tuple[int, int] = (848, 480)   # ! must match the RES param and GPs ratio impl -> 4=480p but is actually 848x480 not 854x480 
     REAL_FPS = 30.0                         # GoPro default should be 30.0 i think
     TARGET_FPS = 5                          # needs to be a fraction of REAL_FPS
     CAM_API = cv.CAP_ANY 
     FOURCC = cv.VideoWriter.fourcc(*'MJPG')
     RECORDING_LENGTH = 5*60                 # in seconds, the time for which we roughly record
-    MODEL_ERROR_FRAME_PADDING = 15          # in seconds, the time for which we don't actually run the model to prevent crashes due to "not enough frames"
+    MODEL_ERROR_FRAME_PADDING = 15          # in seconds, the time for which we don't actually run the model to prevent crashes due to 'not enough frames'
     
     recording = False   # don't touch
     halftime_sound_played = False
@@ -58,7 +59,8 @@ class MainWindow(QMainWindow):
         self.showMaximized()
         self.setWindowTitle('Hybparc Sewing Training')
         self.show_welcome_widget()
-        
+                
+        app.lastWindowClosed.connect(self.handle_application_close)
         self.start_recording_timer_signal.connect(self.start_recording_timer)
         self.show_cleanup_widget_signal.connect(self.show_cleanup_widget)
 
@@ -120,18 +122,11 @@ class MainWindow(QMainWindow):
     
     def start_recording(self):
         # Set up GoPro
-        try:
-            req = requests.get(url = f'http://{self.GP_IP}:{self.GP_HTTP_PORT}/gp/gpWEBCAM/START?res={self.GP_RES}', timeout = 2.5)
-        except:
-            raise TimeoutError(f'HTTP GET timeout. Is there really a GoPro at {self.GP_IP} listening on {self.GP_HTTP_PORT}?')
-        
-        self.log('📡 Commanded UDP stream to start.')
-        if req.status_code == 200:
-            self.log(f'🛰️  RC 200, stream is running.')
-        else:
-            # TODO handle this and retry at least once ngl
-            self.log(f'🚨 RC was {req.status_code} (expected = 200). \n{req.content}\n\n')
-            raise RuntimeError(f'Camera is available at {self.GP_IP}:{self.GP_HTTP_PORT} but failed to start.')
+        self.send_gopro_command(command_path='/gopro/webcam/start', 
+                                params={'res': f'{self.GP_RES}',
+                                        'fov': '0',
+                                        'port': f'{self.GP_UDP_PORT}',
+                                        'protocol': 'TS'})
         
         self.recording = True
         self.rec_thread = threading.Thread(target=self.record, args=())
@@ -155,7 +150,7 @@ class MainWindow(QMainWindow):
     def handle_recording_timeout(self):
         if(self.recording):
             self.log(f'⏰ Recording time ran out after {round(self.RECORDING_LENGTH)} seconds.')
-            playsound("./sounds/tissman_alert3-version-8.wav", block=False)
+            playsound('./sounds/tissman_alert3-version-8.wav', block=False)
             self.log('🔔 Timer end sound played.')
             self.stop_recording()
     
@@ -166,12 +161,12 @@ class MainWindow(QMainWindow):
                 
         if(not self.halftime_sound_played and round(t/1000) < round(self.RECORDING_LENGTH/2)):
             self.halftime_sound_played = True
-            playsound("./sounds/tissman_alert3-version-9.wav", block=False)
+            playsound('./sounds/tissman_alert3-version-9.wav', block=False)
             self.log('🔔 Timer halftime sound played.')
     
     def stop_recording(self):
         if(self.recordingTimer.isActive()): 
-            self.recordingTimer.stop()  # in case the user pressed "stop recording"
+            self.recordingTimer.stop()  # in case the user pressed 'stop recording'
         if(self.uiClock.isActive()):
             self.uiClock.stop()
         
@@ -179,17 +174,7 @@ class MainWindow(QMainWindow):
         self.rec_thread.join()  # wait for thread to wrap up before doing rest of cleanup to prevent race cond.
         self.log('📷 Ceasing to record.')
         
-        try: req = requests.get(url = f'http://{self.GP_IP}:{self.GP_HTTP_PORT}/gp/gpWEBCAM/STOP', timeout = 2.5)
-        except TimeoutError as e:
-            raise TimeoutError(f'HTTP GET timeout. Is there still a GoPro at {self.GP_IP} listening on {self.GP_HTTP_PORT}?')
-        
-        self.log('📡 Commanded UDP stream to stop.')
-        if req.status_code == 200:
-            self.log(f'🛰️  RC 200, streaming has ceased.')
-        else:
-            # ? does this need handling? imo no tbh
-            self.log(f'🚨 RC was {req.status_code} (expected: 200). \n{req.content}\n\n')
-            raise RuntimeError(f'Camera responded with {req.status_code} to stop command!')
+        self.send_gopro_command(command_path='/gopro/webcam/stop')
         
         self.recording_widget.set_state_ready_to_record_signal.emit()
         
@@ -218,7 +203,7 @@ class MainWindow(QMainWindow):
         self.recorded_frames.clear()
 
         self.start_recording_timer_signal.emit()
-        playsound("./sounds/tissman_alert3-version-1.wav", block=False)
+        playsound('./sounds/tissman_alert3-version-1.wav', block=False)
 
         while self.recording:
             ret, frame = self.stream.read()
@@ -236,22 +221,22 @@ class MainWindow(QMainWindow):
 
     def prettify_min_sec(self, msec: int) -> str:
         if(msec < 0):
-            return "00:00"
+            return '00:00'
         
         sec_int: int = int(round((msec / 1000) % 60))
         min_int: int = int(round((msec/ 1000) // 60))
         
         if(sec_int < 10):
-            sec_str: str = f"0{sec_int}"
+            sec_str: str = f'0{sec_int}'
         else:
-            sec_str: str = f"{sec_int}"
+            sec_str: str = f'{sec_int}'
         
         if(min_int == 0):
-            min_str: str = f"00"
+            min_str: str = f'00'
         elif(min_int < 10):
-            min_str: str = f"0{min_int}"
+            min_str: str = f'0{min_int}'
         else:
-            min_str: str = f"{sec_int}"
+            min_str: str = f'{sec_int}'
         
         return f'{min_str}:{sec_str}'
     
@@ -290,7 +275,7 @@ class MainWindow(QMainWindow):
         else:
             self.log('🧮 Beginning evaluation.')
             # add 1 to the eval result, since lowest returned level (0) is one star
-            self.current_result = 1 + predict_mitz.main("test-lul", self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64)[0][1]
+            self.current_result = 1 + predict_mitz.main('test-lul', self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64)[0][1]
             self.log(f'👁️ Evaluation complete, rating {self.current_result - 1} = {self.current_result} star(s).')
         
         # we are done with eval and so actually ready to rerecord if user wants [Search REF002]
@@ -298,11 +283,28 @@ class MainWindow(QMainWindow):
         
         self.show_cleanup_widget_signal.emit()
     
+    def send_gopro_command(self, command_path: str, params: dict[str, str] = {}, panic_on_failure = True):
+        path = f'http://{self.GP_IP}:{self.GP_HTTP_PORT}/{command_path}'
+        
+        try:
+            req = requests.get(url = path, params=params, timeout = 2.5)
+            self.log(f'📡 Sent command \'{command_path}\' with {params} to GoPro. Return code \'{req.status_code}\'.')
+        except:
+            if panic_on_failure:
+                raise TimeoutError(f'HTTP GET timeout under \'{path}\'. Is there really a GoPro at {self.GP_IP} listening on {self.GP_HTTP_PORT}?')
+            else:
+                self.log(f'⚠️ HTTP GET timeout under \'{path}\' however panic_on_failure is set to False for this request.')
+    
+    def handle_application_close(self):
+        self.log('♻️ Application closure initiated, running resource cleanup.')
+        self.send_gopro_command(command_path='/gopro/webcam/exit', panic_on_failure=False)
+        self.send_gopro_command(command_path='/gopro/camera/setting', params={'option':'4','setting':'135'}, panic_on_failure=False)
+    
     @staticmethod
     def log(message: str):
         print(f'[Hybparc] {message}')
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     app = QApplication([])
     window = MainWindow()
     window.show()

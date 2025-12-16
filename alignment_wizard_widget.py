@@ -1,13 +1,12 @@
 from PyQt6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget, QHBoxLayout
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer
-from PyQt6.QtGui import QFont, QPixmap, QImage
+from PyQt6.QtGui import QPixmap, QImage
 import requests
 import cv2 as cv
 
-class AlignmentWizardWidget(QWidget):
-    
+class AlignmentWizardWidget(QWidget):    
     PREVIEW_TICKS_PER_S = 30
-    SKIP_FRAMES = 3
+    SKIP_FRAMES = 5
     OVERLAY_PATH = "./alignment_overlay.png"
     
     wizard_done_signal = pyqtSignal()
@@ -17,7 +16,7 @@ class AlignmentWizardWidget(QWidget):
     preview_clock = QTimer()
     
     # gp_res is not capture res! 480 is not really 480 with gopro, but we must request 480...
-    def __init__(self, gp_ip: str, gp_http_port: str, gp_udp_port: str, gp_res: str, cap_res: tuple[int, int], cap_fps: float, ffmpeg_flags: str, cam_api: int, fourcc: int):
+    def __init__(self, gp_ip: str, gp_http_port: str, gp_udp_port: str, gp_res: str, cap_res: tuple[int, int], cap_fps: float, ffmpeg_flags: str, cam_api: int, fourcc: int):        
         super().__init__()
 
         self.GP_IP = gp_ip
@@ -30,18 +29,11 @@ class AlignmentWizardWidget(QWidget):
         self.CAM_API = cam_api
         self.FOURCC = fourcc
 
-        try:
-            req = requests.get(url = f'http://{self.GP_IP}:{self.GP_HTTP_PORT}/gp/gpWEBCAM/START?res={self.GP_RES}', timeout = 2.5)
-        except:
-            raise TimeoutError(f'HTTP GET timeout. Is there really a GoPro at {self.GP_IP} listening on {self.GP_HTTP_PORT}?')
-        
-        self.log('📡 Commanded UDP stream to start.')
-        if req.status_code == 200:
-            self.log(f'🛰️  RC 200, stream is running.')
-        else:
-            # TODO handle this and retry at least once ngl
-            self.log(f'🚨 RC was {req.status_code} (expected = 200). \n{req.content}\n\n')
-            raise RuntimeError(f'Camera is available at {self.GP_IP}:{self.GP_HTTP_PORT} but failed to start.')
+        self.send_gopro_command(command_path='/gopro/webcam/start', 
+                                params={'res': f'{self.GP_RES}',
+                                        'fov': '0',
+                                        'port': f'{self.GP_UDP_PORT}',
+                                        'protocol': 'TS'})
 
         self.stream = cv.VideoCapture(f'udp://@:{self.GP_UDP_PORT}{self.FFMPEG_FLAGS}', apiPreference=self.CAM_API)
         self.stream.set(cv.CAP_PROP_FOURCC, self.FOURCC)
@@ -98,15 +90,15 @@ class AlignmentWizardWidget(QWidget):
             pass
         
         self.setLayout(horizontalLayout)
-        
+                
         self.start_preview()
     
     # starts UI clock to let us show "video" aka single frames in rapid succession
-    def start_preview(self):
+    def start_preview(self):        
         if(self.preview_clock.isActive()):
             return
         
-        self.log('🍿 Starting preview.')
+        self.log('🛫 Starting preview.')
         self.frame_n = 0
         
         self.current_overlay = cv.imread(self.OVERLAY_PATH)
@@ -114,6 +106,8 @@ class AlignmentWizardWidget(QWidget):
         
         self.preview_clock.timeout.connect(self.update_preview)
         self.preview_clock.start(round(1000 / self.PREVIEW_TICKS_PER_S))
+        
+        self.log('🍿 Preview is running.')
     
     # refreshes the preview image and reloads the overlay, if necessary / if reload flag is set
     def update_preview(self):
@@ -125,6 +119,7 @@ class AlignmentWizardWidget(QWidget):
             except:
                 pass
         
+        self.stream.grab()
         ret, self.current_frame = self.stream.read()
         self.current_frame = cv.cvtColor(self.current_frame, cv.COLOR_RGB2BGRA)
         
@@ -156,29 +151,38 @@ class AlignmentWizardWidget(QWidget):
         self.imageLabel.setPixmap(pixmap)
     
     def stop_preview(self):
-        self.log('🛑 Stopping preview.')
-        
         if(self.preview_clock.isActive()):
             self.preview_clock.stop()
         
-        try: req = requests.get(url = f'http://{self.GP_IP}:{self.GP_HTTP_PORT}/gp/gpWEBCAM/STOP', timeout = 2.5)
-        except TimeoutError as e:
-            raise TimeoutError(f'HTTP GET timeout. Is there still a GoPro at {self.GP_IP} listening on {self.GP_HTTP_PORT}?')
-        
-        self.log('📡 Commanded UDP stream to stop.')
-        if req.status_code == 200:
-            self.log(f'🛰️  RC 200, streaming has ceased.')
-        else:
-            # ? does this need handling? imo no tbh
-            self.log(f'🚨 RC was {req.status_code} (expected: 200). \n{req.content}\n\n')
-            raise RuntimeError(f'Camera responded with {req.status_code} to stop command!')
+        self.send_gopro_command(command_path='/gopro/webcam/stop')
     
         self.stream.release()
+        self.log('🛑 Preview stopped and stream released.')
     
     def save_current(self):
         img = self.current_frame
         cv.imwrite(self.OVERLAY_PATH, cv.cvtColor(img, cv.COLOR_BGRA2RGBA))
         self.reload_overlay = True
+    
+    def send_gopro_command(self, command_path: str, params: dict[str, str] = {}, panic_on_failure = True):
+        path = f'http://{self.GP_IP}:{self.GP_HTTP_PORT}/{command_path}'
+        
+        try:
+            req = requests.get(url = path, params=params, timeout = 2.5)
+            self.log(f'📡 Sent command \'{command_path}\' with {params} to GoPro. Return code \'{req.status_code}\'.')
+        except:
+            if panic_on_failure:
+                raise TimeoutError(f'HTTP GET timeout under \'{path}\'. Is there really a GoPro at {self.GP_IP} listening on {self.GP_HTTP_PORT}?')
+            else:
+                self.log(f'⚠️ HTTP GET timeout under \'{path}\' however panic_on_failure is set to False for this request.')
+    
+    def handle_application_close(self):
+        self.log('♻️ Application closure initiated, running resource cleanup.')
+        self.send_gopro_command(command_path='/gopro/webcam/exit', panic_on_failure=False)
+        self.send_gopro_command(command_path='/gopro/camera/setting', params={'option':'4','setting':'135'}, panic_on_failure=False)
+    
+    def emit_wizard_done_signal(self):
+        self.wizard_done_signal.emit()
     
     # ! assumes, that the two images are the same size
     # https://docs.opencv.org/3.4/d0/d86/tutorial_py_image_arithmetics.html
@@ -195,9 +199,6 @@ class AlignmentWizardWidget(QWidget):
         combined = cv.add(background, foreground)
 
         return combined
-    
-    def emit_wizard_done_signal(self):
-        self.wizard_done_signal.emit()
 
     @staticmethod
     def log(message: str):
