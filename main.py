@@ -59,7 +59,7 @@ class MainWindow(QMainWindow):
         self.showMaximized()
         self.setWindowTitle('Hybparc Sewing Training')
         self.show_welcome_widget()
-                
+        
         app.lastWindowClosed.connect(self.handle_application_close)
         self.start_recording_timer_signal.connect(self.start_recording_timer)
         self.show_cleanup_widget_signal.connect(self.show_cleanup_widget)
@@ -265,7 +265,7 @@ class MainWindow(QMainWindow):
             
             img = img[center_y - int(new_h / 2) : center_y + int(new_h / 2), center_x - int(new_w / 2) : center_x + int(new_w / 2)]
         
-            # now we have 16:9 so we can scale down to models preferred 270x480 (which is 16:9 also)
+            # now we have 16:9 so we can scale down to models preferred 480x270 (which is 16:9 also)
             img = cv.resize(src=img, dsize=(480, 270))
             
             rgb = cv.cvtColor(img, cv.COLOR_BGR2RGB)

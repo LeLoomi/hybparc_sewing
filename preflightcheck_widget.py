@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QVBoxLayout, QPushButton
 from PyQt6.QtSvgWidgets import QSvgWidget
-from PyQt6.QtCore import Qt, pyqtSignal, QSize
+from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer
 from PyQt6.QtGui import QPixmap, QIcon
 import requests
 
@@ -127,9 +127,6 @@ class PreflightCheckWidget(QWidget):
         self.load_tip(self.current_tip)
         self.setLayout(mainLayout)
     
-    def send_done_signal(self):
-        self.precheck_completed_signal.emit()
-    
     def run_check(self):
         self.check_camera()
     
@@ -189,6 +186,14 @@ class PreflightCheckWidget(QWidget):
             pm2 = self.scale_pixmap_to_height(pm2, self.IMAGE_HEIGHT)
             self.imgLabel2.setPixmap(pm2)
             self.imgLabel2.setHidden(False)
+
+    def handle_precheck_done(self):
+        self.runCheckButton.setEnabled(False)
+        self.repaint()
+        QTimer.singleShot(0, self.send_done_signal)
+
+    def send_done_signal(self):
+        self.precheck_completed_signal.emit()
 
     @staticmethod
     def scale_pixmap_to_height(image: QPixmap, height: int) -> QPixmap:
