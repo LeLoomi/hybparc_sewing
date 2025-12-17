@@ -6,6 +6,7 @@ import requests
 
 class PreflightCheckWidget(QWidget):
     precheck_completed_signal = pyqtSignal()    # signal to tell main.py we are ready to continue
+    run_camera_check_signal = pyqtSignal()
     
     IMAGE_HEIGHT = 440
     current_tip = 0     # ! don't touch
@@ -28,11 +29,8 @@ class PreflightCheckWidget(QWidget):
         ]
     ]
     
-    def __init__(self, GP_IP, GP_HTTP_PORT):
+    def __init__(self):
         super().__init__()
-
-        self.GP_IP = GP_IP
-        self.GP_HTTP_PORT = GP_HTTP_PORT
 
         # * general stuff setup starts here
         self.headerLabel = QLabel("<b>Kameraüberprüfung</b>")
@@ -52,7 +50,7 @@ class PreflightCheckWidget(QWidget):
         
         self.runCheckButton = QPushButton("Erneut prüfen")
         self.runCheckButton.setShortcut(Qt.Key.Key_Return)
-        self.runCheckButton.clicked.connect(self.run_check)
+        self.runCheckButton.clicked.connect(self.run_camera_check_signal.emit)
         
         buttonFont = self.runCheckButton.font()
         buttonFont.setPointSize(32)
@@ -127,26 +125,20 @@ class PreflightCheckWidget(QWidget):
         self.load_tip(self.current_tip)
         self.setLayout(mainLayout)
     
-    def run_check(self):
-        self.check_camera()
-    
-    def check_camera(self):
-        try:
-            req = requests.get(url = f'http://{self.GP_IP}:{self.GP_HTTP_PORT}/gp/gpControl/status', timeout = 2.5)
-        except Exception as e:
-            if(type(e) == requests.exceptions.ConnectTimeout):
-                self.log(f"🚨 Camera timed out, is it on and reachable on {self.GP_IP}:{self.GP_HTTP_PORT}?")
+    def handle_check_result(self, result: bool | Exception):
+        if isinstance(result, requests.ConnectTimeout):
+                self.log(f"⚠️  Timeout occured during camera precheck HTTP request. Check connectivity as indicated on screen.")
                 self.set_state_check_timeout()
+        elif isinstance(result, bool):
+            if result == True:
+                self.log(f"✅ Camera preflight check completed.")
+                self.precheck_completed_signal.emit()
             else:
-                self.log(f"🚨 Unhandled failure with message {str(e)}?")
-                self.set_state_other_failure(str(e))
-            return
-        if(req.status_code == 200):
-            self.log("✅ Camera returned HTTP 200, good to go.")
-            self.send_done_signal()
+                self.log(f'🚨 Unexpected failure occured in preflight!')
+                raise ValueError('Preflight check return was False, which should be utterly impossible. How did we get here?')
         else:
-            self.log(f"⚠️ Camera returned HTTP {req.status_code}!")
-            self.set_state_other_failure(f"HTTP Error {req.status_code}")
+                self.log(f'🚨 Unhandled failure occured in preflight: {result}')
+                self.set_state_other_failure(str(result))
     
     def set_state_check_timeout(self):
         self.iconSvgWidget = QSvgWidget('./graphics/video-slash-solid.svg')

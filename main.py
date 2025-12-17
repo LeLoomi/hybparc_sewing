@@ -73,10 +73,11 @@ class MainWindow(QMainWindow):
 
     def show_preflight_check_widget(self):
         self.log('📺 Displaying preflight check widget.', with_spacer=True)
-        precheckWidget = PreflightCheckWidget(self.GP_IP, self.GP_HTTP_PORT)
-        precheckWidget.precheck_completed_signal.connect(self.init_gopro_webcam)
-        self.setCentralWidget(precheckWidget)
-        precheckWidget.check_camera()   # if camera is available, we even skip the check visually most of the time
+        self.precheckWidget = PreflightCheckWidget()
+        self.precheckWidget.run_camera_check_signal.connect(self.check_camera_status)
+        self.precheckWidget.precheck_completed_signal.connect(self.init_gopro_webcam)
+        self.setCentralWidget(self.precheckWidget)
+        self.check_camera_status()
 
     def init_gopro_webcam(self):
         self.log('🛠️ Initializing GoPro Webcam mode.', with_spacer=True)
@@ -129,6 +130,10 @@ class MainWindow(QMainWindow):
         self.results_widget = ResultsWidget(result_level_to_display=self.current_result)
         self.results_widget.new_try_requested_signal.connect(self.show_task_widget)
         self.setCentralWidget(self.results_widget)
+    
+    def check_camera_status(self):
+        ret = self.send_gopro_command(command_path='/gopro/webcam/status', panic_on_failure=False)
+        self.precheckWidget.handle_check_result(ret)
     
     def start_recording(self):
         # Set up GoPro
@@ -202,10 +207,14 @@ class MainWindow(QMainWindow):
         self.stream.set(cv.CAP_PROP_FRAME_WIDTH, self.CAP_RES[0])
         self.stream.set(cv.CAP_PROP_FRAME_HEIGHT, self.CAP_RES[1])
         self.stream.set(cv.CAP_PROP_FPS, self.REAL_FPS)
-        self.log('✅ Capture is running.')
         
-        # capture is running so we can now actually set ui to say so [Search REF001]
-        self.recording_widget.set_state_recording_signal.emit()
+        if self.stream.isOpened():
+            self.log('✅ OpenCV capture is running.')
+            # capture is running so we can now actually set ui to say so [Search REF001]
+            self.recording_widget.set_state_recording_signal.emit()
+        else:
+            self.log('🚨 OpenCV capture failed to open!')
+            raise RuntimeError()
         
         iter = int(self.REAL_FPS / self.TARGET_FPS - 1)
         drop_counter = iter
@@ -293,8 +302,8 @@ class MainWindow(QMainWindow):
         
         self.show_cleanup_widget_signal.emit()
     
-    def send_gopro_command(self, command_path: str, params: dict[str, str] = {}, panic_on_failure = True):
-        # remove first character if it's a slash 
+    def send_gopro_command(self, command_path: str, params: dict[str, str] = {}, panic_on_failure = True) -> bool | Exception:
+        # remove first character if it's a slash
         if command_path[0] == '/':
             command_path = command_path[1:]
         
@@ -306,6 +315,9 @@ class MainWindow(QMainWindow):
             
             if req.status_code != 200:
                 raise ValueError(f'HTTP GET Return code was {req.status_code}, not 200.')
+            else:
+                return True
+        
         except Exception as e:
             if panic_on_failure:
                 self.log('🚨 A critical error occured! Software is terminating. Exception will be logged after cleanup attempt.', with_spacer=True)
@@ -313,6 +325,7 @@ class MainWindow(QMainWindow):
                 raise type(e)(f'Request error under \'{path}\': {e}')
             else:
                 self.log(f'⚠️  Request error under \'{path}\', however panic_on_failure is set to False for this request: {e}')
+                return e
     
     def handle_application_close(self):
         self.log('♻️  Application closure initiated, running resource cleanup:', with_spacer=True)
