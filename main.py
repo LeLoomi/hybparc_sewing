@@ -1,7 +1,6 @@
 import cv2 as cv
 import threading
 import requests
-from enum import Enum
 from sys import argv
 from ipaddress import ip_address
 from PyQt6.QtCore import QTimer, pyqtSignal
@@ -25,11 +24,12 @@ class MainWindow(QMainWindow):
     GP_HTTP_PORT: str = '8080'
     GP_UDP_PORT: str = '8554'               # UDP Port, 8554 = default
     GP_RES = '4'                            # stream res, supported: 4=480, 7=720, 12=1080
-    FFMPEG_FLAGS = '?overrun_nonfatal=1'    # ffmpeg buffer overflow = ignored lol
+    GP_FOV = '4'                            # 0=Wide, 2=Narrow, 3=Superview, 4=Linear
+    FFMPEG_FLAGS = '?overrun_nonfatal=1'    # ffmpeg buffer overflow = we don't care lol
     CAP_RES: tuple[int, int] = (848, 480)   # ! must match the RES param and GPs ratio impl -> 4=480p but is actually 848x480 not 854x480 
     REAL_FPS = 30.0                         # GoPro default should be 30.0 i think
     TARGET_FPS = 5                          # needs to be a fraction of REAL_FPS
-    CAM_API = cv.CAP_ANY 
+    CAM_API = cv.CAP_FFMPEG 
     FOURCC = cv.VideoWriter.fourcc(*'MJPG')
     RECORDING_LENGTH = 5*60                 # in seconds, the time for which we roughly record
     MODEL_ERROR_FRAME_PADDING = 15          # in seconds, the time for which we don't actually run the model to prevent crashes due to 'not enough frames'
@@ -74,9 +74,19 @@ class MainWindow(QMainWindow):
     def show_preflight_check_widget(self):
         self.log('📺 Displaying preflight check widget.', with_spacer=True)
         precheckWidget = PreflightCheckWidget(self.GP_IP, self.GP_HTTP_PORT)
-        precheckWidget.precheck_completed_signal.connect(self.show_alignment_wizard_widget)
+        precheckWidget.precheck_completed_signal.connect(self.init_gopro_webcam)
         self.setCentralWidget(precheckWidget)
         precheckWidget.check_camera()   # if camera is available, we even skip the check visually most of the time
+
+    def init_gopro_webcam(self):
+        self.log('🛠️ Initializing GoPro Webcam mode.', with_spacer=True)
+        # 59=auto power down; 6=15 minutes. GP shouldn't power down while plugged in, but just to be sure
+        self.send_gopro_command(command_path='/gopro/camera/setting', params={'setting':'59', 'option':'6'}, panic_on_failure=False)
+        # boot GP into webcam mode without immediately starting the stream. needed for fov command to be allowed 
+        self.send_gopro_command('/gopro/webcam/preview')
+        # trivia: setting FOV during a running webcam (not preview) results in resolution being set to 1080 and a stream restart lol
+        self.send_gopro_command('/gp/gpWebcam/SETTINGS', {'fov': self.GP_FOV})  # command call only supported via old API version, case sensitive!
+        QTimer.singleShot(0, self.show_alignment_wizard_widget)
 
     def show_alignment_wizard_widget(self):
         self.log('📺 Displaying alignment wizard widget.', with_spacer=True)
@@ -122,11 +132,7 @@ class MainWindow(QMainWindow):
     
     def start_recording(self):
         # Set up GoPro
-        self.send_gopro_command(command_path='/gopro/webcam/start', 
-                                params={'res': f'{self.GP_RES}',
-                                        'fov': '0',
-                                        'port': f'{self.GP_UDP_PORT}',
-                                        'protocol': 'TS'})
+        self.send_gopro_command(command_path='/gopro/webcam/start', params={'res': self.GP_RES})
         
         self.recording = True
         self.rec_thread = threading.Thread(target=self.record, args=())
@@ -288,16 +294,25 @@ class MainWindow(QMainWindow):
         self.show_cleanup_widget_signal.emit()
     
     def send_gopro_command(self, command_path: str, params: dict[str, str] = {}, panic_on_failure = True):
+        # remove first character if it's a slash 
+        if command_path[0] == '/':
+            command_path = command_path[1:]
+        
         path = f'http://{self.GP_IP}:{self.GP_HTTP_PORT}/{command_path}'
         
         try:
             req = requests.get(url = path, params=params, timeout = 2.5)
-            self.log(f'📡 Sent command \'{command_path}\' with {params} to GoPro. Return code \'{req.status_code}\'.')
-        except:
+            self.log(f'📡 Sent command \'{command_path}\' with params {params} to GoPro. Return code \'{req.status_code}\'.')
+            
+            if req.status_code != 200:
+                raise ValueError(f'HTTP GET Return code was {req.status_code}, not 200.')
+        except Exception as e:
             if panic_on_failure:
-                raise TimeoutError(f'HTTP GET timeout under \'{path}\'. Is there really a GoPro at {self.GP_IP} listening on {self.GP_HTTP_PORT}?')
+                self.log('🚨 A critical error occured! Software is terminating. Exception will be logged after cleanup attempt.', with_spacer=True)
+                self.handle_application_close()
+                raise type(e)(f'Request error under \'{path}\': {e}')
             else:
-                self.log(f'⚠️ HTTP GET timeout under \'{path}\' however panic_on_failure is set to False for this request.')
+                self.log(f'⚠️  Request error under \'{path}\', however panic_on_failure is set to False for this request: {e}')
     
     def handle_application_close(self):
         self.log('♻️  Application closure initiated, running resource cleanup:', with_spacer=True)
@@ -306,7 +321,8 @@ class MainWindow(QMainWindow):
             self.stop_recording(is_application_quit=True)
         
         self.send_gopro_command(command_path='/gopro/webcam/exit', panic_on_failure=False)
-        self.send_gopro_command(command_path='/gopro/camera/setting', params={'option':'4','setting':'59'}, panic_on_failure=False)
+        # 59=auto power down; 4=5 minutes
+        self.send_gopro_command(command_path='/gopro/camera/setting', params={'setting':'59', 'option':'4'}, panic_on_failure=False)
     
     @staticmethod
     def log(message: str, with_spacer=False):
@@ -316,6 +332,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication([])
+    app.setApplicationName('HybParc Nahtstation')
     window = MainWindow()
     window.show()
     app.exec()
