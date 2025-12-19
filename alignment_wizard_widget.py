@@ -1,15 +1,18 @@
 from PyQt6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QWidget, QHBoxLayout
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtGui import QPixmap, QImage
+from PyQt6.QtSvgWidgets import QSvgWidget
 import requests
 import cv2 as cv
+import threading
 
 class AlignmentWizardWidget(QWidget):    
-    PREVIEW_TICKS_PER_S = 30
-    SKIP_FRAMES = 5
-    OVERLAY_PATH = "./alignment_overlay.png"
-    
     wizard_done_signal = pyqtSignal()
+    capture_running_signal = pyqtSignal()
+    
+    PREVIEW_TICKS_PER_S = 30
+    SKIP_FRAMES = 0
+    OVERLAY_PATH = './alignment_overlay.png'
     
     reload_overlay = True
     current_overlay = None
@@ -35,13 +38,6 @@ class AlignmentWizardWidget(QWidget):
                                         'port': f'{self.GP_UDP_PORT}',
                                         'protocol': 'TS'})
 
-        self.stream = cv.VideoCapture(f'udp://@:{self.GP_UDP_PORT}{self.FFMPEG_FLAGS}', apiPreference=self.CAM_API)
-        self.stream.set(cv.CAP_PROP_FOURCC, self.FOURCC)
-        self.stream.set(cv.CAP_PROP_FRAME_WIDTH, self.CAP_RES[0])
-        self.stream.set(cv.CAP_PROP_FRAME_HEIGHT, self.CAP_RES[1])
-        self.stream.set(cv.CAP_PROP_FPS, self.CAP_FPS)
-        self.log('✅ Capture is running.')
-
         explainer_label = QLabel('''<b>Willkommen bei der Kamera-Einstellungshilfe</b>
                                     <br>Bitte richte das Nahtpad und sein Beiwerk so aus, dass der pinke Rahmen gut mit den Kanten des Nahtmaterials übereinstimmt.''')
         
@@ -52,16 +48,20 @@ class AlignmentWizardWidget(QWidget):
         explainer_label.setWordWrap(True)
         explainer_label.setFont(font)
 
-        self.imageLabel = QLabel()
+        self.current_frame_label = QLabel()
+
+        self.spinner_svg_widget = QSvgWidget('./graphics/circle-notch-solid-animated.svg')
+        self.spinner_svg_widget.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio) # pyright: ignore[reportOptionalMemberAccess]
+        self.spinner_svg_widget.setFixedSize(55, 55)
 
         save_new_button = QPushButton()
-        save_new_button.setText("Aktuelle Position speichern")
+        save_new_button.setText('Aktuelle Position speichern')
         save_new_button.setFont(font)
-        save_new_button.clicked.connect(self.save_current)
+        #save_new_button.clicked.connect(self.save_current)
         save_new_button.setDisabled(True) # ! diabled since we don't have edge detection for the pad.
 
         done_button = QPushButton()
-        done_button.setText("Anwendung starten")
+        done_button.setText('Anwendung starten')
         done_button.setFont(font)
         done_button.setShortcut(Qt.Key.Key_Return)
         done_button.clicked.connect(self.stop_preview)
@@ -74,24 +74,34 @@ class AlignmentWizardWidget(QWidget):
         button_layout.addWidget(done_button)
         button_layout.addStretch()
 
-        contentLayout = QVBoxLayout()
-        contentLayout.addStretch()
-        contentLayout.addWidget(explainer_label)
-        contentLayout.addWidget(self.imageLabel)
-        contentLayout.addLayout(button_layout)
-        contentLayout.addStretch()
+        content_layout = QVBoxLayout()
+        content_layout.addStretch()
+        content_layout.addWidget(explainer_label)
+        content_layout.addWidget(self.current_frame_label)
+        content_layout.addLayout(button_layout)
+        content_layout.addStretch()
         
-        horizontalLayout = QHBoxLayout()
-        horizontalLayout.addStretch()
-        horizontalLayout.addLayout(contentLayout)
-        horizontalLayout.addStretch()
+        horizontal_wrapper_layout = QHBoxLayout()
+        horizontal_wrapper_layout.addStretch()
+        horizontal_wrapper_layout.addLayout(content_layout)
+        horizontal_wrapper_layout.addStretch()
         
-        while not self.stream.isOpened():
-            pass
+        self.capture_running_signal.connect(self.start_preview)
         
-        self.setLayout(horizontalLayout)
-                
-        self.start_preview()
+        self.setLayout(horizontal_wrapper_layout)
+        
+        self.rec_thread = threading.Thread(target=self.setup_capture)
+        QTimer.singleShot(0, self.rec_thread.start)
+    
+    def setup_capture(self):
+        self.stream = cv.VideoCapture(f'udp://@:{self.GP_UDP_PORT}{self.FFMPEG_FLAGS}', apiPreference=self.CAM_API)
+        self.stream.set(cv.CAP_PROP_FOURCC, self.FOURCC)
+        self.stream.set(cv.CAP_PROP_FRAME_WIDTH, self.CAP_RES[0])
+        self.stream.set(cv.CAP_PROP_FRAME_HEIGHT, self.CAP_RES[1])
+        self.stream.set(cv.CAP_PROP_FPS, self.CAP_FPS)
+        self.log('✅ Capture is running.')
+        
+        self.capture_running_signal.emit()
     
     # starts UI clock to let us show "video" aka single frames in rapid succession
     def start_preview(self):        
@@ -148,7 +158,7 @@ class AlignmentWizardWidget(QWidget):
             bytesPerLine,
             QImage.Format.Format_RGBA8888)
         pixmap = QPixmap.fromImage(qImg).scaledToWidth(1200, Qt.TransformationMode.FastTransformation)  # 2300 is a good fit for our local screen setup
-        self.imageLabel.setPixmap(pixmap)
+        self.current_frame_label.setPixmap(pixmap)
     
     def stop_preview(self):
         if(self.preview_clock.isActive()):
