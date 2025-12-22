@@ -8,8 +8,8 @@ Also check out our hands-on [ECG training sofware](https://github.com/LeLoomi/hy
 
 General requirements
 --------------------
-
-> TBD
+> Incomplete
+- FFMPEG
 
 Trivia
 ------

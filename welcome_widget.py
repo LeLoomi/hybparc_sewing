@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QLabel, QPushButton, QVBoxLayout, QLineEdit, QWidget, QHBoxLayout
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer
 from PyQt6.QtGui import QFont
 
 class WelcomeWidget(QWidget):
@@ -30,17 +30,17 @@ class WelcomeWidget(QWidget):
         font.setPointSize(28)
         textLabel.setFont(font)
 
-        startButton = QPushButton("Weiter")
-        startButton.clicked.connect(self.emit_start_pressed)
-        startButton.setShortcut(Qt.Key.Key_Return)
-        startButton.setFont(mediumFont)
-        startButton.setMaximumWidth(150)
+        self.startButton = QPushButton("Weiter")
+        self.startButton.clicked.connect(self.handle_continue_pressed)
+        self.startButton.setShortcut(Qt.Key.Key_Return)
+        self.startButton.setFont(mediumFont)
+        self.startButton.setMaximumWidth(150)
 
         verticalLayout = QVBoxLayout()
         verticalLayout.addStretch()
         verticalLayout.addWidget(textLabel)
-        verticalLayout.addWidget(startButton)
-        verticalLayout.setAlignment(startButton, Qt.AlignmentFlag.AlignHCenter)
+        verticalLayout.addWidget(self.startButton)
+        verticalLayout.setAlignment(self.startButton, Qt.AlignmentFlag.AlignHCenter)
         verticalLayout.addStretch()
 
         mainLayout = QHBoxLayout()
@@ -50,5 +50,10 @@ class WelcomeWidget(QWidget):
 
         self.setLayout(mainLayout)
 
-    def emit_start_pressed(self):
+    def handle_continue_pressed(self):
+        self.startButton.setDisabled(True)
+        self.repaint()
+        QTimer.singleShot(0, self.emit_continue_pressed)    # needed for Qt painter thread stuff...
+    
+    def emit_continue_pressed(self):
         self.start_pressed.emit()

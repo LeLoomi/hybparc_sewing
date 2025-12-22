@@ -1,4 +1,3 @@
-USB
 The socket address for USB connections is 172.2X.1YZ.51:8080 where XYZ are the last three digits of the camera's serial number.
 
 The camera's serial number can be obtained in any of the following ways:
@@ -12,4 +11,6 @@ Alternatively, the IP address can be discovered via mDNS as the camera registers
 
 MITZ GoPros:
 - "172.29.197.51" (deployed in setup)
-- "172.25.190.51"
+- "172.25.190.51" (used in development)
+
+=> if you are deploying this, ideally you don't touch the IP in main and instead pass your IP as first and only command line argument to main when running the software.
