@@ -7,12 +7,15 @@ import cv2 as cv
 import threading
 
 class AlignmentWizardWidget(QWidget):    
-    wizard_done_signal = pyqtSignal()
-    capture_running_signal = pyqtSignal()
+    wizard_is_done_signal = pyqtSignal()
+    capture_started_running_signal = pyqtSignal()
     
     PREVIEW_TICKS_PER_S = 30
     SKIP_FRAMES = 0
     OVERLAY_PATH = './alignment_overlay.png'
+    
+    preview_loading_text = '<b>Einen Moment, bitte</b><br>Der Ausrichtungsassistet wird noch geladen...'
+    explainer_text = '<b>Willkommen bei der Kamera-Einstellungshilfe</b> <br>Bitte richte das Nahtpad und sein Beiwerk so aus, dass der pinke Rahmen gut mit den Kanten des Nahtpads übereinstimmt.'
     
     reload_overlay = True
     current_overlay = None
@@ -38,15 +41,19 @@ class AlignmentWizardWidget(QWidget):
                                         'port': f'{self.GP_UDP_PORT}',
                                         'protocol': 'TS'})
 
-        explainer_label = QLabel('''<b>Willkommen bei der Kamera-Einstellungshilfe</b>
-                                    <br>Bitte richte das Nahtpad und sein Beiwerk so aus, dass der pinke Rahmen gut mit den Kanten des Nahtmaterials übereinstimmt.''')
+        self.capture_started_running_signal.connect(self.start_preview)
         
-        font = explainer_label.font()
+        self.rec_thread = threading.Thread(target=self.setup_capture)
+        QTimer.singleShot(0, self.rec_thread.start)
+        
+        self.main_text_label = QLabel(self.preview_loading_text)
+        
+        font = self.main_text_label.font()
         font.setPointSize(28)
-        explainer_label.setTextFormat(Qt.TextFormat.RichText)
-        explainer_label.setAlignment(Qt.AlignmentFlag.AlignLeading)
-        explainer_label.setWordWrap(True)
-        explainer_label.setFont(font)
+        self.main_text_label.setTextFormat(Qt.TextFormat.RichText)
+        self.main_text_label.setAlignment(Qt.AlignmentFlag.AlignLeading)
+        self.main_text_label.setWordWrap(True)
+        self.main_text_label.setFont(font)
 
         self.current_frame_label = QLabel()
 
@@ -74,24 +81,24 @@ class AlignmentWizardWidget(QWidget):
         button_layout.addWidget(done_button)
         button_layout.addStretch()
 
-        content_layout = QVBoxLayout()
-        content_layout.addStretch()
-        content_layout.addWidget(explainer_label)
-        content_layout.addWidget(self.current_frame_label)
-        content_layout.addLayout(button_layout)
-        content_layout.addStretch()
+        self.content_layout = QVBoxLayout()
+        self.content_layout.addStretch()
+        self.content_layout.addWidget(self.main_text_label)
+        self.content_layout.addWidget(self.spinner_svg_widget)
+        self.content_layout.setAlignment(self.spinner_svg_widget, Qt.AlignmentFlag.AlignCenter)
+        self.content_layout.addWidget(self.current_frame_label)
+        self.current_frame_label.setHidden(True)
+        self.content_layout.addLayout(button_layout)
+        
+        self.content_layout.addStretch()
         
         horizontal_wrapper_layout = QHBoxLayout()
         horizontal_wrapper_layout.addStretch()
-        horizontal_wrapper_layout.addLayout(content_layout)
+        horizontal_wrapper_layout.addLayout(self.content_layout)
         horizontal_wrapper_layout.addStretch()
         
-        self.capture_running_signal.connect(self.start_preview)
         
         self.setLayout(horizontal_wrapper_layout)
-        
-        self.rec_thread = threading.Thread(target=self.setup_capture)
-        QTimer.singleShot(0, self.rec_thread.start)
     
     def setup_capture(self):
         self.stream = cv.VideoCapture(f'udp://@:{self.GP_UDP_PORT}{self.FFMPEG_FLAGS}', apiPreference=self.CAM_API)
@@ -101,7 +108,7 @@ class AlignmentWizardWidget(QWidget):
         self.stream.set(cv.CAP_PROP_FPS, self.CAP_FPS)
         self.log('✅ Capture is running.')
         
-        self.capture_running_signal.emit()
+        self.capture_started_running_signal.emit()
     
     # starts UI clock to let us show "video" aka single frames in rapid succession
     def start_preview(self):        
@@ -109,6 +116,7 @@ class AlignmentWizardWidget(QWidget):
             return
         
         self.log('🛫 Starting preview.')
+        self.set_state_preview_running()
         self.frame_n = 0
         
         self.current_overlay = cv.imread(self.OVERLAY_PATH)
@@ -185,14 +193,14 @@ class AlignmentWizardWidget(QWidget):
                 raise TimeoutError(f'HTTP GET timeout under \'{path}\'. Is there really a GoPro at {self.GP_IP} listening on {self.GP_HTTP_PORT}?')
             else:
                 self.log(f'⚠️ HTTP GET timeout under \'{path}\' however panic_on_failure is set to False for this request.')
-    
-    def handle_application_close(self):
-        self.log('♻️ Application closure initiated, running resource cleanup.')
-        self.send_gopro_command(command_path='/gopro/webcam/exit', panic_on_failure=False)
-        self.send_gopro_command(command_path='/gopro/camera/setting', params={'option':'4','setting':'135'}, panic_on_failure=False)
+        
+    def set_state_preview_running(self):
+        self.content_layout.removeWidget(self.spinner_svg_widget)
+        self.current_frame_label.setHidden(False)
+        self.main_text_label.setText(self.explainer_text)
     
     def emit_wizard_done_signal(self):
-        self.wizard_done_signal.emit()
+        self.wizard_is_done_signal.emit()
     
     # ! assumes, that the two images are the same size
     # https://docs.opencv.org/3.4/d0/d86/tutorial_py_image_arithmetics.html

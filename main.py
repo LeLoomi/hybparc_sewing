@@ -102,7 +102,7 @@ class MainWindow(QMainWindow):
             self.CAM_API,
             self.FOURCC
         )
-        alignment_wizard_widget.wizard_done_signal.connect(self.show_task_widget)
+        alignment_wizard_widget.wizard_is_done_signal.connect(self.show_task_widget)
         self.setCentralWidget(alignment_wizard_widget)
 
     def show_task_widget(self):
