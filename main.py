@@ -96,6 +96,7 @@ class MainWindow(QMainWindow):
             self.GP_HTTP_PORT,
             self.GP_UDP_PORT,
             self.GP_RES,
+            self.GP_FOV,
             self.CAP_RES,
             self.REAL_FPS,
             self.FFMPEG_FLAGS,

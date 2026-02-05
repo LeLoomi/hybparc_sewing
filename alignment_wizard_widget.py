@@ -22,24 +22,25 @@ class AlignmentWizardWidget(QWidget):
     preview_clock = QTimer()
     
     # gp_res is not capture res! 480 is not really 480 with gopro, but we must request 480...
-    def __init__(self, gp_ip: str, gp_http_port: str, gp_udp_port: str, gp_res: str, cap_res: tuple[int, int], cap_fps: float, ffmpeg_flags: str, cam_api: int, fourcc: int):
+    def __init__(self, gp_ip: str, gp_http_port: str, gp_udp_port: str, gp_res: str, gp_fov: str, cap_res: tuple[int, int], cap_fps: float, ffmpeg_flags: str, cam_api: int, fourcc: int):
         super().__init__()
 
         self.GP_IP = gp_ip
         self.GP_HTTP_PORT = gp_http_port
         self.GP_UDP_PORT = gp_udp_port
         self.GP_RES = gp_res
+        self.GP_FOV = gp_fov
         self.CAP_RES = cap_res
         self.CAP_FPS = cap_fps
         self.FFMPEG_FLAGS = ffmpeg_flags
         self.CAM_API = cam_api
         self.FOURCC = fourcc
 
-        self.BUFFER_BURN_COUNT = round(self.CAP_FPS * 10)  # ! testing showed a buffer induced delay of up to 8 seconds on capture obj creation, so we just burn 10s worth of frames to be sure
+        self.BUFFER_BURN_COUNT = round(self.CAP_FPS * 10)  # testing showed a buffer induced delay of up to 8 seconds on capture obj creation, so we just burn 10s worth of frames to be sure
 
         self.send_gopro_command(command_path='/gopro/webcam/start', 
                                 params={'res': f'{self.GP_RES}',
-                                        'fov': '0',
+                                        'fov': f'{self.GP_FOV}',
                                         'port': f'{self.GP_UDP_PORT}',
                                         'protocol': 'TS'})
 
