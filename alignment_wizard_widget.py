@@ -6,14 +6,14 @@ import requests
 import cv2 as cv
 import threading
 
-class AlignmentWizardWidget(QWidget):    
+class AlignmentWizardWidget(QWidget):
     wizard_is_done_signal = pyqtSignal()
     capture_started_running_signal = pyqtSignal()
     
     PREVIEW_TICKS_PER_S = 30
     SKIP_FRAMES = 0
     OVERLAY_PATH = './alignment_overlay.png'
-    
+        
     preview_loading_text = '<b>Einen Moment, bitte</b><br>Der Ausrichtungsassistet wird noch geladen...'
     explainer_text = '<b>Willkommen bei der Kamera-Einstellungshilfe</b> <br>Bitte richte das Nahtpad und sein Beiwerk so aus, dass der pinke Rahmen gut mit den Kanten des Nahtpads übereinstimmt.'
     
@@ -22,7 +22,7 @@ class AlignmentWizardWidget(QWidget):
     preview_clock = QTimer()
     
     # gp_res is not capture res! 480 is not really 480 with gopro, but we must request 480...
-    def __init__(self, gp_ip: str, gp_http_port: str, gp_udp_port: str, gp_res: str, cap_res: tuple[int, int], cap_fps: float, ffmpeg_flags: str, cam_api: int, fourcc: int):        
+    def __init__(self, gp_ip: str, gp_http_port: str, gp_udp_port: str, gp_res: str, cap_res: tuple[int, int], cap_fps: float, ffmpeg_flags: str, cam_api: int, fourcc: int):
         super().__init__()
 
         self.GP_IP = gp_ip
@@ -34,6 +34,8 @@ class AlignmentWizardWidget(QWidget):
         self.FFMPEG_FLAGS = ffmpeg_flags
         self.CAM_API = cam_api
         self.FOURCC = fourcc
+
+        self.BUFFER_BURN_COUNT = round(self.CAP_FPS * 10)  # ! testing showed a buffer induced delay of up to 8 seconds on capture obj creation, so we just burn 10s worth of frames to be sure
 
         self.send_gopro_command(command_path='/gopro/webcam/start', 
                                 params={'res': f'{self.GP_RES}',
@@ -108,10 +110,14 @@ class AlignmentWizardWidget(QWidget):
         self.stream.set(cv.CAP_PROP_FPS, self.CAP_FPS)
         self.log('✅ Capture is running.')
         
+        for i in range(0, self.BUFFER_BURN_COUNT):
+            self.stream.grab()
+        self.log(f'Burned {self.BUFFER_BURN_COUNT} frames to avoid preview delay.')
+        
         self.capture_started_running_signal.emit()
     
     # starts UI clock to let us show "video" aka single frames in rapid succession
-    def start_preview(self):        
+    def start_preview(self):
         if(self.preview_clock.isActive()):
             return
         
@@ -137,7 +143,6 @@ class AlignmentWizardWidget(QWidget):
             except:
                 pass
         
-        self.stream.grab()
         ret, self.current_frame = self.stream.read()
         self.current_frame = cv.cvtColor(self.current_frame, cv.COLOR_RGB2BGRA)
         
@@ -153,7 +158,7 @@ class AlignmentWizardWidget(QWidget):
         
         try:
             raw_with_saved_overlay = self.overlay_opaque(self.current_frame, self.current_overlay) # pyright: ignore[reportArgumentType, reportCallIssue]
-        except: 
+        except:
             # if we don't have a saved overlay
             raw_with_saved_overlay = self.current_frame
         
