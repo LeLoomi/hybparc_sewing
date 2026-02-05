@@ -122,7 +122,7 @@ class AlignmentWizardWidget(QWidget):
         if(self.preview_clock.isActive()):
             return
         
-        self.log('🛫 Starting preview.')
+        self.log('🛫 Starting alignment wizard camera preview.')
         self.set_state_preview_running()
         self.frame_n = 0
         

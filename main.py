@@ -107,7 +107,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(alignment_wizard_widget)
 
     def show_task_widget(self):
-        self.log(f'📺 Displaying cleanup widget.', with_spacer=True)
+        self.log(f'📺 Displaying task widget.', with_spacer=True)
         self.task_widget = TaskWidget()
         self.task_widget.continue_pressed.connect(self.show_recording_widget)
         self.setCentralWidget(self.task_widget)
@@ -296,7 +296,7 @@ class MainWindow(QMainWindow):
             self.log('🧮 Beginning evaluation.')
             # add 1 to the eval result, since lowest returned level (0) is one star
             self.current_result = 1 + predict_mitz.main('test-lul', self.processed_frames, 3, 'models/20240112_I3D_snip64_seg12-70_15_15-1632-best.pt', 12, 64)[0][1]
-            self.log(f'👁️ Evaluation complete, rating {self.current_result - 1} = {self.current_result} star(s).')
+            self.log(f'👁️  Evaluation complete, rating {self.current_result - 1} = {self.current_result} star(s).')
         
         # we are done with eval and so actually ready to rerecord if user wants [Search REF002]
         self.recording_widget.set_state_ready_to_record_signal.emit()

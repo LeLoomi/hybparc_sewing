@@ -13,4 +13,4 @@ MITZ GoPros:
 - "172.29.197.51" (deployed in setup)
 - "172.25.190.51" (used in development)
 
-=> if you are deploying this, ideally you don't touch the IP in main and instead pass your IP as first and only command line argument to main when running the software.
+=> if you are deploying this, ideally you don't touch the IP in main and instead pass your IP as first and only command line argument to main.py when running the software.
